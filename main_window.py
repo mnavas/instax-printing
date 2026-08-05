@@ -112,15 +112,19 @@ class CropSlot(QWidget):
         return lbl
 
     # -- actions --
+    # Extensions we can decode; both cases are listed because the native (OS)
+    # file dialog matches glob patterns case-sensitively, so plain "*.jpg" would
+    # hide ".JPG" photos and make the folder look empty.
+    _IMG_EXTS = ("jpg", "jpeg", "jpe", "jfif", "png", "tif", "tiff", "bmp", "webp")
+
     def _on_load(self) -> None:
         start = self._last_dir or os.path.expanduser("~")
-        # Use Qt's own dialog (not the native/portal one): on Linux the native
-        # dialog often shows an empty folder, and its filter is case-sensitive so
-        # .JPG photos get hidden. Qt's dialog is reliable and case-insensitive.
+        patterns = " ".join(f"*.{e} *.{e.upper()}" for e in self._IMG_EXTS)
+        # Native OS dialog (matches the system theme); the case-inclusive filter
+        # above ensures images actually show.
         path, _ = QFileDialog.getOpenFileName(
             self, "Choose an image", start,
-            "Images (*.jpg *.jpeg *.jpe *.jfif *.png *.tif *.tiff *.bmp *.webp);;All files (*)",
-            options=QFileDialog.Option.DontUseNativeDialog,
+            f"Images ({patterns});;All files (*)",
         )
         if not path:
             return
