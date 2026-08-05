@@ -40,11 +40,13 @@ CARD_RATIO = CARD_W / CARD_H
 TOP_BORDER_MM = 4.0
 TOP_BORDER_PX = mm_to_px(TOP_BORDER_MM)   # ~47; bottom border is the remainder (~20 mm)
 
-# Layout: three instax cards across the 4R width, centred, with small gaps.
-# Three 54 mm cards (162 mm) are wider than the 4R (152 mm), so they print a
-# little under full size — a real instax is 54×86 mm.
-GAP_MM = 2.0
-MARGIN_MM = 3.0
+# Layout: three instax cards packed edge-to-edge and flush to the top of the 4R.
+# No outer margins and no gaps, so the sheet's own trim edges are the outer
+# borders (nothing to cut on the left, right, or top) and the two boundaries
+# between cards need a single cut each. Three 54 mm cards (162 mm) are wider than
+# the 4R (152 mm), so they print a little under full size.
+GAP_MM = 0.0
+MARGIN_MM = 0.0
 GAP_PX = mm_to_px(GAP_MM)
 MARGIN_PX = mm_to_px(MARGIN_MM)
 
@@ -76,9 +78,11 @@ def card_print_size() -> tuple[int, int]:
 
 
 def card_positions() -> list[tuple[int, int]]:
-    """Top-left (x, y) of each of the three cards on the canvas."""
+    """Top-left (x, y) of each of the three cards on the canvas. Flush to the top
+    (top border aligned with the sheet's top edge) and centred horizontally —
+    which, with zero margin, means flush left/right and filling the full width."""
     w, h = card_print_size()
     block_w = 3 * w + 2 * GAP_PX
     x0 = (CANVAS_W - block_w) // 2
-    y = (CANVAS_H - h) // 2
+    y = MARGIN_PX
     return [(x0 + i * (w + GAP_PX), y) for i in range(3)]

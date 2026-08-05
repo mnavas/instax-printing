@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.0.3
+
+- Cards now pack edge-to-edge and flush to the top of the sheet (no outer
+  margins, no gaps), so the sheet's own trim edges are the outer borders. Cut
+  marks reduced to only what's needed: two full-height vertical cuts between the
+  cards (a single cut splits the shared white into an even ~3.7 mm border on
+  each) and one bottom trim line — nothing to cut on the left, right, or top.
+
 ## v0.0.2
 
 - Photos are now composited inside a full **instax-mini card** (54×86 mm) with
