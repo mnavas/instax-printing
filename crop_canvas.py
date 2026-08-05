@@ -1,0 +1,195 @@
+"""Interactive instax-ratio crop: the whole source is shown with an instax-shaped
+frame the user can drag, zoom (mouse wheel) and rotate. The frame is always kept
+inside the image so the crop can never contain blank edges."""
+from __future__ import annotations
+
+import cv2
+import numpy as np
+from PyQt6.QtCore import QPointF, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
+from PyQt6.QtWidgets import QWidget
+
+import imaging
+import instax_config as cfg
+
+_OUT_W, _OUT_H = cfg.INSTAX_W, cfg.INSTAX_H
+_MAX_ZOOM = 8.0   # frame may shrink to 1/8 of the "fills the image" size
+
+
+class CropCanvas(QWidget):
+    changed = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(300, 380)
+        self.setMouseTracking(True)
+        self.setStyleSheet("background-color: #161616;")
+
+        self._img: np.ndarray | None = None
+        self._pix: QPixmap | None = None
+        self._w = self._h = 0
+
+        self.angle = 0.0        # degrees
+        self.zoom = 1.0         # ≥ 1; multiplies the minimum (fills-image) scale
+        self.cx = self.cy = 0.0  # frame centre in source pixels
+
+        self._view_scale = 1.0
+        self._view_off = QPointF(0, 0)
+        self._drag_last: QPointF | None = None
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def is_ready(self) -> bool:
+        return self._img is not None
+
+    def set_image(self, path) -> bool:
+        img = imaging.imread(path)
+        if img is None:
+            return False
+        self._img = img
+        self._h, self._w = img.shape[:2]
+        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        qimg = QImage(rgb.data, self._w, self._h, 3 * self._w, QImage.Format.Format_RGB888)
+        self._pix = QPixmap.fromImage(qimg.copy())
+        self.reset_view()
+        return True
+
+    def reset_view(self) -> None:
+        self.angle = 0.0
+        self.zoom = 1.0
+        self.cx, self.cy = self._w / 2, self._h / 2
+        self._apply()
+
+    def rotate_by(self, delta_deg: float) -> None:
+        self.set_angle(self.angle + delta_deg)
+
+    def set_angle(self, angle_deg: float) -> None:
+        self.angle = ((angle_deg + 180) % 360) - 180   # wrap to (-180, 180]
+        self._apply()
+
+    def set_zoom(self, zoom: float) -> None:
+        self.zoom = max(1.0, min(_MAX_ZOOM, zoom))
+        self._apply()
+
+    def scale(self) -> float:
+        s_min = imaging.min_scale(self.angle, _OUT_W, _OUT_H, self._w, self._h)
+        return s_min * self.zoom
+
+    def get_output(self) -> np.ndarray | None:
+        if self._img is None:
+            return None
+        return imaging.render_crop(
+            self._img, self.angle, self.scale(), self.cx, self.cy, _OUT_W, _OUT_H
+        )
+
+    def source_dpi(self) -> float:
+        """Effective print resolution of the current crop, in DPI. Below ~180
+        the print will look soft."""
+        if self._img is None:
+            return 0.0
+        # Output width _OUT_W spans INSTAX_W_MM; the source contributes _OUT_W/scale px.
+        src_px = _OUT_W / self.scale()
+        inches = cfg.INSTAX_W_MM / 25.4
+        return src_px / inches
+
+    # ------------------------------------------------------------------
+    # Internal
+    # ------------------------------------------------------------------
+
+    def _apply(self) -> None:
+        if self._img is None:
+            return
+        self.cx, self.cy = imaging.clamp_center(
+            self.cx, self.cy, self.angle, self.scale(), _OUT_W, _OUT_H, self._w, self._h
+        )
+        self.update()
+        self.changed.emit()
+
+    def _compute_view(self) -> None:
+        if self._img is None:
+            return
+        vw, vh = self.width(), self.height()
+        self._view_scale = min(vw / self._w, vh / self._h)
+        dw, dh = self._w * self._view_scale, self._h * self._view_scale
+        self._view_off = QPointF((vw - dw) / 2, (vh - dh) / 2)
+
+    def _src_to_view(self, p) -> QPointF:
+        return QPointF(p[0] * self._view_scale + self._view_off.x(),
+                       p[1] * self._view_scale + self._view_off.y())
+
+    # ------------------------------------------------------------------
+    # Events
+    # ------------------------------------------------------------------
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor("#161616"))
+        if self._img is None or self._pix is None:
+            painter.setPen(QColor("#666"))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
+                             "Click Load to choose an image")
+            return
+
+        self._compute_view()
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        # Source image, fit to widget
+        dw = self._w * self._view_scale
+        dh = self._h * self._view_scale
+        painter.drawPixmap(
+            int(self._view_off.x()), int(self._view_off.y()),
+            int(round(dw)), int(round(dh)), self._pix
+        )
+
+        # Instax frame as a polygon in view space
+        quad = imaging.crop_quad_src(self.angle, self.scale(), self.cx, self.cy, _OUT_W, _OUT_H)
+        poly = QPolygonF([self._src_to_view(p) for p in quad])
+
+        # Dim everything outside the frame
+        outside = QPainterPath()
+        outside.addRect(0.0, 0.0, float(self.width()), float(self.height()))
+        inside = QPainterPath()
+        inside.addPolygon(poly)
+        inside.closeSubpath()
+        painter.fillPath(outside.subtracted(inside), QColor(0, 0, 0, 130))
+
+        # Frame outline + rule-of-thirds guides
+        painter.setPen(QPen(QColor("#4a9eff"), 2))
+        painter.drawPolygon(poly)
+        painter.setPen(QPen(QColor(255, 255, 255, 90), 1))
+        for i in (1, 2):
+            f = i / 3.0
+            top = poly[0] + (poly[1] - poly[0]) * f
+            bot = poly[3] + (poly[2] - poly[3]) * f
+            painter.drawLine(top, bot)
+            left = poly[0] + (poly[3] - poly[0]) * f
+            right = poly[1] + (poly[2] - poly[1]) * f
+            painter.drawLine(left, right)
+
+    def wheelEvent(self, event) -> None:
+        if self._img is None:
+            return
+        step = 1.0015 ** event.angleDelta().y()   # smooth zoom
+        self.set_zoom(self.zoom * step)
+
+    def mousePressEvent(self, event) -> None:
+        if self._img is not None and event.button() == Qt.MouseButton.LeftButton:
+            self._drag_last = event.position()
+
+    def mouseMoveEvent(self, event) -> None:
+        if self._drag_last is None or self._img is None:
+            return
+        pos = event.position()
+        dx = (pos.x() - self._drag_last.x()) / self._view_scale
+        dy = (pos.y() - self._drag_last.y()) / self._view_scale
+        self._drag_last = pos
+        # Dragging moves the frame in the drag direction.
+        self.cx += dx
+        self.cy += dy
+        self._apply()
+
+    def mouseReleaseEvent(self, event) -> None:
+        self._drag_last = None
