@@ -36,6 +36,13 @@ little under full size. All layout numbers live in
 ## Run
 
 ```bash
+./run.sh
+```
+
+First run creates a local `.venv` and installs dependencies; after that it just
+launches the app. To do it by hand instead:
+
+```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python main.py
