@@ -10,21 +10,27 @@ ready to send to a photo lab and cut apart.
    mouse-wheel to zoom, and rotate (⟲/⟳ 90° buttons or the Angle slider). The
    frame is locked to the instax mini image ratio (46×62 mm) and always stays
    inside the photo, so the crop never has blank edges.
-3. When all three crops are ready, **Generate 4R sheet**. The three photos are
-   placed side by side across the width of the 4R at ~instax size, centred, with
-   small **cut-mark crosses** at every corner so you know where to trim.
-4. **Save** the sheet as a 300-DPI JP/PNG/TIFF (physical size embedded) or
+3. When all three crops are ready, **Generate 4R sheet**. Each photo is placed
+   inside a full **instax-mini card** — white border, thin at the top, thick at
+   the bottom (the classic instax look) — and the three cards are laid across the
+   width of the 4R, centred, with **light-grey trim lines and corner crosses** so
+   you know exactly where to cut.
+4. **Save** the sheet as a 300-DPI JPG/PNG/TIFF (physical size embedded) or
    **Print** it directly.
+
+Print it, cut along the marks, and each piece looks like a real instax mini.
 
 ## Dimensions
 
 | | mm | px @ 300 DPI |
 |---|---|---|
 | 4R sheet (landscape) | 152.4 × 101.6 | 1800 × 1200 |
-| instax mini image | 46 × 62 | 543 × 732 |
+| instax mini card | 54 × 86 | 638 × 1016 |
+| instax mini image area | 46 × 62 | 543 × 732 |
 
-Three instax photos across the 4R width come out a hair under full instax size
-(so they fit with a small margin and gaps). All layout numbers live in
+The image area sits inside the card with 4 mm side/top borders and a ~20 mm
+bottom border. Three 54 mm cards are wider than the 4R (152 mm), so they print a
+little under full size. All layout numbers live in
 [`instax_config.py`](instax_config.py) and are easy to tweak.
 
 ## Run
