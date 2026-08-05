@@ -22,12 +22,6 @@ def make_instax_card(crop: np.ndarray) -> np.ndarray:
     return card
 
 
-def _cross(canvas: np.ndarray, x: int, y: int) -> None:
-    arm, t = cfg.CROSS_ARM_PX, cfg.CROSS_THICKNESS
-    cv2.line(canvas, (x - arm, y), (x + arm, y), cfg.CROSS_COLOR, t, cv2.LINE_AA)
-    cv2.line(canvas, (x, y - arm), (x, y + arm), cfg.CROSS_COLOR, t, cv2.LINE_AA)
-
-
 def _draw_cut_marks(canvas: np.ndarray, positions, cw: int, ch: int) -> None:
     """Only the cuts that are actually needed with the edge-to-edge, top-flush
     layout: two vertical cuts between the three cards and one horizontal trim at
@@ -45,13 +39,6 @@ def _draw_cut_marks(canvas: np.ndarray, positions, cw: int, ch: int) -> None:
         cv2.line(canvas, (x, 0), (x, cfg.CANVAS_H), gray, g, cv2.LINE_AA)
     # Bottom trim across the full width
     cv2.line(canvas, (x_left, y_bot), (x_right, y_bot), gray, g, cv2.LINE_AA)
-
-    # Crosses at the cut endpoints and intersections to line the blade up
-    for x in boundaries:
-        _cross(canvas, x, y_top)   # top of each vertical cut (sheet top edge)
-        _cross(canvas, x, y_bot)   # where a vertical meets the bottom trim
-    _cross(canvas, x_left, y_bot)
-    _cross(canvas, x_right, y_bot)
 
 
 def build_4r(crops: list[np.ndarray]) -> np.ndarray:

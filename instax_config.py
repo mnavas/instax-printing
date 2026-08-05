@@ -50,12 +50,8 @@ MARGIN_MM = 0.0
 GAP_PX = mm_to_px(GAP_MM)
 MARGIN_PX = mm_to_px(MARGIN_MM)
 
-# Cut marks: light-grey trim lines around each card plus black corner crosses.
-CROSS_ARM_MM = 2.5          # length of each cross arm from the corner
-CROSS_ARM_PX = mm_to_px(CROSS_ARM_MM)
-CROSS_THICKNESS = 2         # px
+# Cut marks: light-grey trim lines along the cuts that are actually needed.
 TRIM_LINE_COLOR = (205, 205, 205)   # BGR, light grey
-CROSS_COLOR = (0, 0, 0)
 
 
 def image_offset() -> tuple[int, int]:
