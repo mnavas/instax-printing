@@ -1,6 +1,8 @@
 """instax-printing — arrange three instax-mini crops onto a print-ready 4R sheet."""
 from __future__ import annotations
 
+import os
+
 import cv2
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap
@@ -44,6 +46,8 @@ _ACCENT = (
 
 class CropSlot(QWidget):
     """One of the three crop stations: image + load/rotate/reset + zoom/angle sliders."""
+
+    _last_dir = ""   # remembered across all three slots
 
     def __init__(self, index: int, on_change, parent=None):
         super().__init__(parent)
@@ -109,12 +113,18 @@ class CropSlot(QWidget):
 
     # -- actions --
     def _on_load(self) -> None:
+        start = self._last_dir or os.path.expanduser("~")
+        # Use Qt's own dialog (not the native/portal one): on Linux the native
+        # dialog often shows an empty folder, and its filter is case-sensitive so
+        # .JPG photos get hidden. Qt's dialog is reliable and case-insensitive.
         path, _ = QFileDialog.getOpenFileName(
-            self, "Choose an image", "",
-            "Images (*.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)",
+            self, "Choose an image", start,
+            "Images (*.jpg *.jpeg *.jpe *.jfif *.png *.tif *.tiff *.bmp *.webp);;All files (*)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         if not path:
             return
+        CropSlot._last_dir = os.path.dirname(path)
         if not self.canvas.set_image(path):
             QMessageBox.warning(self, "Load failed", "Could not read that image.")
             return
