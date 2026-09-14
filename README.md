@@ -53,6 +53,26 @@ python main.py
 - `instax_config.py` — physical sizes → pixels, and the 3-up layout.
 - `imaging.py` — image I/O (unicode-safe, DPI-aware save) and the crop-transform maths.
 - `crop_canvas.py` — the interactive move/zoom/rotate instax crop widget.
-- `composite.py` — assembles the 4R sheet and draws the cut crosses.
+- `composite.py` — assembles the 4R sheet and draws the cut marks.
 - `main_window.py` — the three crop slots, generate flow, and preview/save/print dialog.
 - `main.py` — entry point.
+
+## Documentation
+
+A landing page and full docs live alongside the code:
+
+- **[index.html](index.html)** — project landing page (open it in a browser).
+- **[docs/installation.md](docs/installation.md)** — install on Linux / macOS / Windows.
+- **[docs/user-guide.md](docs/user-guide.md)** — the complete workflow, crop, DPI, and cutting guide.
+- **[docs/architecture.md](docs/architecture.md)** — module map, the size model, and the crop maths.
+
+## Support
+
+instax-printing is a free, open-source side project. If it saves you money and
+hassle printing your instax photos, you can support development via:
+
+- **GitHub Sponsors** — https://github.com/sponsors/mnavas
+- **PayPal** — https://paypal.me/warionv
+- **De Una · Banco Pichincha** — scan [`assets/deuna-qr.png`](assets/deuna-qr.png) with your banking app (Ecuador)
+
+The support options are also on the [landing page](index.html). ¡Gracias!

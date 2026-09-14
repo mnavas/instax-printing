@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.0.4
+
+- Added a project **landing page** (`index.html`) and full **docs**
+  (`docs/installation.md`, `docs/user-guide.md`, `docs/architecture.md`).
+- Added a **Support the project** section (GitHub Sponsors, PayPal, and a
+  **De Una · Banco Pichincha** QR — `assets/deuna-qr.png`) on the landing page
+  and in the README.
+
 ## v0.0.3
 
 - Cards now pack edge-to-edge and flush to the top of the sheet (no outer

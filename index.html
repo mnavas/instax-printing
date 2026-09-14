@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>instax-printing — Three instax minis on one 4R print</title>
+  <meta name="description" content="Arrange three photos as instax-mini cards on a single print-ready 4R (15×10 cm) sheet, with the real white border and cut marks. Print three instax for the price of one photo. Free and open source." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:       #E5397E;
+      --pink-dark:  #C41E63;
+      --pink-pale:  #FDF2F7;
+      --gray-50:    #FAFAF9;
+      --gray-100:   #F4F4F2;
+      --gray-200:   #E7E5E2;
+      --gray-400:   #A8A29E;
+      --gray-600:   #57534E;
+      --gray-700:   #44403C;
+      --gray-800:   #292524;
+      --gray-900:   #1C1917;
+      --white:      #FFFFFF;
+      --radius:     12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--gray-800);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .nav-inner {
+      padding: 0 2rem; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; flex-shrink: 0;
+    }
+    .nav-brand span { font-size: 1.15rem; font-weight: 700; color: var(--pink); }
+    .nav-links { display: flex; align-items: center; gap: 2rem; }
+    .nav-links a {
+      text-decoration: none; font-size: 0.875rem; font-weight: 500;
+      color: var(--gray-600); transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--gray-900); }
+
+    .nav-hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 6px; color: var(--gray-800);
+      flex-direction: column; gap: 5px; align-items: center; justify-content: center;
+    }
+    .nav-hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: currentColor; border-radius: 2px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .nav-mobile {
+      display: none; flex-direction: column;
+      background: var(--white); border-top: 1px solid var(--gray-200);
+      padding: 1rem 1.5rem 1.25rem; gap: 0;
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a {
+      text-decoration: none; font-size: 0.95rem; font-weight: 500;
+      color: var(--gray-700); padding: 0.7rem 0;
+      border-bottom: 1px solid var(--gray-100); transition: color 0.15s;
+    }
+    .nav-mobile a:last-of-type { border-bottom: none; }
+    .nav-mobile a:hover { color: var(--pink); }
+    .nav-mobile .btn { margin-top: 0.75rem; justify-content: center; width: 100%; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0.5rem 1.25rem; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600;
+      text-decoration: none; transition: all 0.15s; border: none; cursor: pointer;
+    }
+    .btn-primary { background: var(--pink); color: var(--white); }
+    .btn-primary:hover { background: var(--pink-dark); }
+    .btn-outline {
+      background: transparent; color: var(--gray-800);
+      border: 1.5px solid var(--gray-200);
+    }
+    .btn-outline:hover { border-color: var(--pink); color: var(--pink); }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(160deg, var(--pink-pale) 0%, var(--white) 55%);
+      padding: 5rem 2rem 4rem; text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--pink-pale); border: 1px solid #E5397E55;
+      color: var(--pink-dark); font-size: 0.8rem; font-weight: 600;
+      padding: 4px 12px; border-radius: 999px; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; line-height: 1.15;
+      color: var(--gray-900); max-width: 760px; margin: 0 auto 1.25rem;
+    }
+    .hero h1 .highlight { color: var(--pink); }
+    .hero p {
+      font-size: 1.125rem; color: var(--gray-600);
+      max-width: 580px; margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .hero-actions .btn { padding: 0.75rem 1.75rem; font-size: 1rem; }
+    .hero-meta {
+      margin-top: 2.5rem; font-size: 0.8rem; color: var(--gray-400);
+      display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+    }
+
+    /* Sheet mockup — three instax cards on a 4R */
+    .sheet-mock {
+      margin: 3rem auto 0; max-width: 620px;
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid var(--gray-200);
+      padding: 1.25rem;
+    }
+    .sheet-inner {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px;
+      background: var(--gray-200); border: 1px solid var(--gray-200);
+      aspect-ratio: 1800 / 1200;
+    }
+    .mini-card {
+      background: var(--white); display: flex; flex-direction: column;
+      padding: 5% 5% 16%;
+    }
+    .mini-photo {
+      flex: 1; border-radius: 2px; background-size: cover; background-position: center;
+    }
+    .mini-1 .mini-photo { background: linear-gradient(135deg, #f6a5c0, #f9d59b); }
+    .mini-2 .mini-photo { background: linear-gradient(135deg, #a5c9f6, #b6f0d5); }
+    .mini-3 .mini-photo { background: linear-gradient(135deg, #d3b6f0, #f6b6c9); }
+    .sheet-caption {
+      margin-top: 0.9rem; font-size: 0.78rem; color: var(--gray-400);
+      font-family: 'JetBrains Mono', monospace; text-align: center;
+    }
+
+    /* ── SECTION ── */
+    .section { padding: 5rem 2rem; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--pink); margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 800;
+      color: var(--gray-900); line-height: 1.2; margin-bottom: 1rem;
+    }
+    .section-sub { font-size: 1rem; color: var(--gray-600); max-width: 580px; }
+
+    /* ── FEATURES ── */
+    .features { background: var(--gray-50); }
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 1.75rem;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .feature-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); border-color: var(--pink); }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--pink-pale); display: flex; align-items: center;
+      justify-content: center; font-size: 1.25rem; margin-bottom: 1rem;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature-card p { font-size: 0.9rem; color: var(--gray-600); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--white); }
+    .how-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 2rem; margin-top: 3rem;
+    }
+    .how-step { display: flex; gap: 1.25rem; }
+    .how-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--pink); color: var(--white);
+      font-weight: 700; font-size: 0.875rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .how-step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .how-step p { font-size: 0.9rem; color: var(--gray-600); line-height: 1.6; }
+
+    /* ── SPECS ── */
+    .specs { background: var(--gray-900); }
+    .specs .section-label { color: var(--pink); }
+    .specs .section-title { color: var(--white); }
+    .specs .section-sub { color: var(--gray-400); }
+    .specs-table {
+      margin-top: 3rem; width: 100%; border-collapse: collapse;
+      background: rgba(255,255,255,0.03); border-radius: var(--radius); overflow: hidden;
+    }
+    .specs-table th, .specs-table td {
+      padding: 0.9rem 1.25rem; text-align: left; font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .specs-table th { color: var(--gray-400); font-weight: 600; }
+    .specs-table td { color: #E7E5E2; font-family: 'JetBrains Mono', monospace; }
+    .specs-table tr:last-child th, .specs-table tr:last-child td { border-bottom: none; }
+    .specs-note { margin-top: 1.5rem; color: var(--gray-400); font-size: 0.85rem; }
+
+    /* ── INSTALL ── */
+    .install { background: var(--gray-50); }
+    .steps {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 2rem; margin-top: 3rem;
+    }
+    .step { display: flex; gap: 1.25rem; }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--pink); color: var(--white);
+      font-weight: 700; font-size: 0.875rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .step p { font-size: 0.875rem; color: var(--gray-600); line-height: 1.6; }
+    .code-block {
+      background: #0D1117; border: 1px solid #30363D;
+      border-radius: var(--radius); padding: 1.5rem 1.75rem;
+      margin-top: 2.5rem; overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem; line-height: 1.7; color: #E6EDF3;
+    }
+    .code-block .cm { color: #8B949E; }
+
+    /* ── CONTRIBUTE ── */
+    .contribute { background: var(--white); }
+    .contribute-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem; margin-top: 3rem;
+    }
+    .contribute-card {
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 1.5rem;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .contribute-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); border-color: var(--pink); }
+    .contribute-card .icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
+    .contribute-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .contribute-card p { font-size: 0.875rem; color: var(--gray-600); line-height: 1.6; margin-bottom: 1rem; }
+    .contribute-card a {
+      font-size: 0.875rem; font-weight: 600; color: var(--pink); text-decoration: none;
+    }
+    .contribute-card a:hover { text-decoration: underline; }
+
+    /* ── SUPPORT ── */
+    .support { background: var(--gray-50); }
+    .support-inner {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3rem; align-items: center; margin-top: 3rem;
+    }
+    @media (max-width: 768px) { .support-inner { grid-template-columns: 1fr; } }
+    .support-text h2 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; line-height: 1.25; margin-bottom: 1rem; }
+    .support-text p { font-size: 0.95rem; color: var(--gray-600); line-height: 1.7; margin-bottom: 1rem; }
+    .donate-card {
+      background: var(--white); border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius); padding: 2rem;
+    }
+    .donate-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .donate-options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .donate-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0.875rem 1.25rem; border-radius: 10px; text-decoration: none;
+      font-size: 0.875rem; font-weight: 600; transition: opacity 0.15s;
+      border: none; cursor: pointer;
+    }
+    .donate-btn:hover { opacity: 0.88; }
+    .donate-btn-github { background: #24292F; color: var(--white); }
+    .donate-btn-paypal { background: #003087; color: var(--white); }
+    .donate-btn-icon { font-size: 1.1rem; }
+    .donate-btn-text { display: flex; flex-direction: column; line-height: 1.2; }
+    .donate-btn-text small { font-size: 0.75rem; font-weight: 400; opacity: 0.75; }
+
+    .deuna-btn {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: #1a1a2e; color: var(--white);
+      border: none; border-radius: 10px; padding: 0.75rem 1rem;
+      cursor: pointer; width: 100%; font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; font-weight: 600; transition: opacity 0.15s;
+    }
+    .deuna-btn:hover { opacity: 0.85; }
+    .deuna-btn-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .deuna-btn-text { display: flex; flex-direction: column; line-height: 1.2; text-align: left; }
+    .deuna-btn-text small { font-size: 0.75rem; font-weight: 400; opacity: 0.75; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.65); align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--white); border-radius: 20px;
+      padding: 2rem; max-width: 340px; width: 90%; text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    }
+    .modal-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .modal-box p { font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1rem; }
+    .modal-box img { width: 100%; max-width: 260px; border-radius: 12px; }
+    .modal-close {
+      display: block; margin: 1rem auto 0; padding: 0.5rem 1.5rem;
+      background: var(--gray-100); border: none; border-radius: 8px;
+      font-family: 'Inter', sans-serif; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; color: var(--gray-700);
+    }
+    .modal-close:hover { background: var(--gray-200); }
+
+    /* ── OPEN SOURCE ── */
+    .opensource { background: var(--pink); }
+    .opensource .section-title { color: var(--white); }
+    .opensource .section-sub { color: rgba(255,255,255,0.9); max-width: 600px; }
+    .license-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35);
+      color: var(--white); font-size: 0.8rem; font-weight: 600;
+      padding: 5px 14px; border-radius: 999px; margin-bottom: 1.5rem;
+    }
+    .opensource .btn-white {
+      background: var(--white); color: var(--pink-dark); font-weight: 700;
+      padding: 0.875rem 2rem; font-size: 1rem; border-radius: 8px;
+      text-decoration: none; display: inline-block; margin-top: 2rem;
+      transition: opacity 0.15s;
+    }
+    .opensource .btn-white:hover { opacity: 0.9; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--gray-900); padding: 3rem 2rem; text-align: center;
+    }
+    footer .footer-brand {
+      display: flex; align-items: center; gap: 10px;
+      justify-content: center; margin-bottom: 1rem;
+    }
+    footer .footer-brand span { font-size: 1rem; font-weight: 700; color: var(--pink); }
+    footer p { font-size: 0.8rem; color: var(--gray-400); margin-top: 0.5rem; }
+    footer nav {
+      margin-top: 1.5rem; display: flex; gap: 1.5rem;
+      justify-content: center; flex-wrap: wrap;
+      background: none; border: none; position: static;
+    }
+    footer nav a { font-size: 0.8rem; color: var(--gray-400); text-decoration: none; }
+    footer nav a:hover { color: var(--white); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-inner { padding: 0 1.25rem; }
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+      .hero { padding: 4rem 1.25rem 3rem; }
+      .section { padding: 3.5rem 1.25rem; }
+      .specs-table th, .specs-table td { padding: 0.7rem 0.9rem; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      <span>🖼 instax-printing</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#specs">Sizes</a>
+      <a href="#install">Install</a>
+      <a href="#support">Support</a>
+      <a href="https://github.com/mnavas/instax-printing" target="_blank" class="btn btn-primary">GitHub</a>
+    </div>
+    <button class="nav-hamburger" id="nav-toggle" aria-label="Open menu" onclick="toggleNav()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="nav-mobile" id="nav-mobile">
+    <a href="#features" onclick="closeNav()">Features</a>
+    <a href="#how" onclick="closeNav()">How it works</a>
+    <a href="#specs" onclick="closeNav()">Sizes</a>
+    <a href="#install" onclick="closeNav()">Install</a>
+    <a href="#support" onclick="closeNav()">Support</a>
+    <a href="https://github.com/mnavas/instax-printing" target="_blank" class="btn btn-primary">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🖼 Open source · Desktop app</div>
+  <h1>Three instax minis on<br/><span class="highlight">one cheap 4R print</span></h1>
+  <p>Pick three photos, frame each inside a real instax-mini card — white border and all — and lay them on a print-ready 15×10 cm sheet with cut marks. Print, cut, done.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/mnavas/instax-printing" class="btn btn-primary">⬇ Get it on GitHub</a>
+    <a href="docs/user-guide.md" class="btn btn-outline">Read the docs</a>
+  </div>
+  <div class="hero-meta">
+    <span>🎞 Real instax-mini look</span>
+    <span>✂️ Cut marks included</span>
+    <span>🖨 300 DPI, print-ready</span>
+    <span>🐍 Python · PyQt6</span>
+  </div>
+
+  <div class="sheet-mock" aria-label="Three instax cards laid out on a 4R sheet">
+    <div class="sheet-inner">
+      <div class="mini-card mini-1"><div class="mini-photo"></div></div>
+      <div class="mini-card mini-2"><div class="mini-photo"></div></div>
+      <div class="mini-card mini-3"><div class="mini-photo"></div></div>
+    </div>
+    <div class="sheet-caption">4R · 15 × 10 cm · 1800 × 1200 px @ 300 DPI</div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section features" id="features">
+  <div class="section-inner">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Print-shop instax, three at a time</h2>
+    <p class="section-sub">Everything you need to turn phone photos into instax-mini prints on a standard lab sheet.</p>
+
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon">🎞</div>
+        <h3>Real instax-mini cards</h3>
+        <p>Each photo is composited inside a full 54×86 mm card with the classic white border — thin at the top and sides, thick at the bottom — so cut-out prints look like actual instax minis.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🖐</div>
+        <h3>Interactive crop frame</h3>
+        <p>Drag to move, mouse-wheel or a slider to zoom, and rotate with 90° buttons or the angle slider. A rule-of-thirds grid helps you compose each shot.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Never blank edges</h3>
+        <p>The instax frame is locked to the 46×62 mm ratio and always kept inside the photo — at any rotation — so a crop can never include a white sliver.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📏</div>
+        <h3>Live DPI check</h3>
+        <p>Each crop shows its effective print resolution as you zoom. Drop below 180 DPI and it turns red with a low-res warning, so you catch a soft print before you pay for it.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✂️</div>
+        <h3>Just the cuts you need</h3>
+        <p>Cards pack edge-to-edge and flush to the top, so you only cut two vertical lines and one bottom trim — the sheet's own edges are the outer borders.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🖨</div>
+        <h3>Save or print at 300 DPI</h3>
+        <p>Export a JPEG, PNG, or TIFF with the physical size embedded, or print straight from the app. A lab reproduces it at exactly 15×10 cm with no fiddling.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🌍</div>
+        <h3>Unicode-safe files</h3>
+        <p>Photos with accents, ñ, or non-Latin characters in the path load and save correctly on Linux, macOS, and Windows.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📂</div>
+        <h3>Batch a shoot</h3>
+        <p>The file picker remembers your last folder across all three slots and lists both upper- and lower-case extensions, so a folder of photos never shows up empty.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section how" id="how">
+  <div class="section-inner">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">From three photos to a print in a minute</h2>
+    <p class="section-sub">No projects to manage, no export presets to configure — just load, frame, generate.</p>
+
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <div>
+          <h3>Load three photos</h3>
+          <p>One per crop slot. JPEG, PNG, TIFF, BMP, WEBP — the picker remembers your folder so a shoot goes fast.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <div>
+          <h3>Frame each one</h3>
+          <p>Drag, zoom, and rotate the instax frame until it covers exactly what you want. Watch the DPI readout stay green.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <div>
+          <h3>Generate the sheet</h3>
+          <p>One click lays the three instax cards on a 4R with cut marks and opens a preview at 15×10 cm.</p>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <div>
+          <h3>Print &amp; cut</h3>
+          <p>Save or print at 300 DPI, then make three straight cuts. Each piece is an instax-mini-style print.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECS -->
+<section class="section specs" id="specs">
+  <div class="section-inner">
+    <div class="section-label">Sizes</div>
+    <h2 class="section-title">Anchored to real millimetres</h2>
+    <p class="section-sub">Every dimension is defined in mm and rendered at 300 DPI, so the exported file prints at the correct physical size.</p>
+
+    <table class="specs-table">
+      <tr><th>Element</th><th>Millimetres</th><th>Pixels @ 300 DPI</th></tr>
+      <tr><td>4R sheet (landscape)</td><td>152.4 × 101.6</td><td>1800 × 1200</td></tr>
+      <tr><td>instax-mini card</td><td>54 × 86</td><td>638 × 1016</td></tr>
+      <tr><td>instax image area</td><td>46 × 62</td><td>543 × 732</td></tr>
+      <tr><td>top / side border</td><td>4</td><td>~47</td></tr>
+    </table>
+
+    <p class="specs-note">
+      The image area sits inside the card with 4 mm side/top borders and a ~20 mm bottom border — the classic instax look. Three 54 mm cards (162 mm) are a touch wider than the 4R (152 mm), so they print slightly under full size. All layout numbers live in <code style="color:#F6A5C0;font-family:'JetBrains Mono',monospace;">instax_config.py</code> and are easy to tweak.
+    </p>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section class="section install" id="install">
+  <div class="section-inner">
+    <div class="section-label">Installation</div>
+    <h2 class="section-title">Up and running in minutes</h2>
+    <p class="section-sub">Python 3.11+, Linux / macOS / Windows. No build step — clone and run.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>Clone the repository</h3>
+          <p>You'll need Python 3.11+ and Git. On Linux, install the PyQt6 system libs first (see the install doc).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>Run the launcher</h3>
+          <p><code style="color:#F6A5C0;font-family:'JetBrains Mono',monospace;">./run.sh</code> creates a local venv, installs PyQt6, OpenCV, Pillow, and NumPy on first run, then launches the app.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>Load, frame, print</h3>
+          <p>The window opens with three empty crop slots. Load a photo into each, frame it, and generate your 4R sheet.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <pre><span class="cm"># Clone the repository</span>
+git clone https://github.com/mnavas/instax-printing.git
+cd instax-printing
+
+<span class="cm"># First run creates the venv + installs deps, then launches</span>
+./run.sh
+
+<span class="cm"># …or do it by hand</span>
+python3 -m venv .venv
+source .venv/bin/activate   <span class="cm"># Windows: .venv\Scripts\activate</span>
+pip install -r requirements.txt
+python main.py</pre>
+    </div>
+
+    <p style="margin-top:2rem;color:var(--gray-600);font-size:0.875rem;">
+      For Linux system packages (libxcb, etc.), desktop launcher setup, and platform notes see
+      <a href="docs/installation.md" style="color:var(--pink);text-decoration:none;">docs/installation.md</a>.
+    </p>
+  </div>
+</section>
+
+<!-- CONTRIBUTE -->
+<section class="section contribute" id="contribute">
+  <div class="section-inner">
+    <div class="section-label">Contribute</div>
+    <h2 class="section-title">Help make it better</h2>
+    <p class="section-sub">instax-printing is open source and welcomes contributions of any size.</p>
+
+    <div class="contribute-grid">
+      <div class="contribute-card">
+        <div class="icon">🐛</div>
+        <h3>Report a bug</h3>
+        <p>Something crash or print wrong? Open an issue with steps to reproduce and your OS / Python version.</p>
+        <a href="https://github.com/mnavas/instax-printing/issues" target="_blank">Open an issue →</a>
+      </div>
+      <div class="contribute-card">
+        <div class="icon">💡</div>
+        <h3>Suggest a feature</h3>
+        <p>Want other print sizes, more cards per sheet, or a different border? Open a feature request and describe it.</p>
+        <a href="https://github.com/mnavas/instax-printing/issues" target="_blank">Request a feature →</a>
+      </div>
+      <div class="contribute-card">
+        <div class="icon">🔧</div>
+        <h3>Submit a pull request</h3>
+        <p>Fork, branch, and send a PR. Read <a href="docs/architecture.md" style="color:var(--pink);">docs/architecture.md</a> first — it explains the module map and the crop maths.</p>
+        <a href="https://github.com/mnavas/instax-printing/fork" target="_blank">Fork on GitHub →</a>
+      </div>
+      <div class="contribute-card">
+        <div class="icon">📖</div>
+        <h3>Improve the docs</h3>
+        <p>Docs are plain Markdown in the <code style="font-size:0.8rem;background:var(--gray-100);padding:1px 5px;border-radius:4px;">docs/</code> folder — easy to edit and submit.</p>
+        <a href="https://github.com/mnavas/instax-printing/tree/main/docs" target="_blank">Browse the docs →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SUPPORT -->
+<section class="section support" id="support">
+  <div class="section-inner">
+    <div class="section-label">Support the project</div>
+    <div class="support-inner">
+      <div class="support-text">
+        <h2>Keep instax-printing free and actively maintained</h2>
+        <p>instax-printing is built and maintained as a side project. It's free and open source — but development tools, time, and motivation all have a real cost.</p>
+        <p>If the app saves you money and hassle printing your instax photos, consider chipping in. Every contribution helps keep it maintained and improving.</p>
+        <p style="font-size:0.85rem;color:var(--gray-400);">All contributions go directly to the developer. No company, no VC behind this.</p>
+      </div>
+      <div class="donate-card">
+        <h3>Choose how to support</h3>
+        <div class="donate-options">
+
+          <a href="https://github.com/sponsors/mnavas" target="_blank" class="donate-btn donate-btn-github">
+            <span class="donate-btn-icon">♥</span>
+            <span class="donate-btn-text">
+              GitHub Sponsors
+              <small>Monthly or one-time via GitHub</small>
+            </span>
+          </a>
+
+          <a href="https://paypal.me/warionv" target="_blank" class="donate-btn donate-btn-paypal">
+            <span class="donate-btn-icon">💳</span>
+            <span class="donate-btn-text">
+              PayPal
+              <small>paypal.me/warionv</small>
+            </span>
+          </a>
+
+          <button class="deuna-btn" onclick="document.getElementById('deuna-modal').classList.add('open')">
+            <span class="deuna-btn-icon">📱</span>
+            <span class="deuna-btn-text">
+              De Una · Banco Pichincha
+              <small>Pago con QR — Ecuador</small>
+            </span>
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OPEN SOURCE -->
+<section class="section opensource" id="opensource">
+  <div class="section-inner" style="text-align:center;">
+    <div class="license-badge">📄 Open source</div>
+    <h2 class="section-title">Free and open source</h2>
+    <p class="section-sub">instax-printing is free to use, fork, and modify. No telemetry, no accounts, no cloud — everything runs on your machine.</p>
+    <a href="https://github.com/mnavas/instax-printing" class="btn-white">View on GitHub →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">
+    <span>🖼 instax-printing</span>
+  </div>
+  <p>Three instax-mini photos on a print-ready 4R sheet</p>
+  <nav>
+    <a href="https://github.com/mnavas/instax-printing">GitHub</a>
+    <a href="docs/installation.md">Install</a>
+    <a href="docs/user-guide.md">User Guide</a>
+    <a href="docs/architecture.md">Architecture</a>
+    <a href="#contribute">Contribute</a>
+    <a href="#support">Support</a>
+    <a href="https://github.com/mnavas/instax-printing/issues">Issues</a>
+  </nav>
+</footer>
+
+<!-- DE UNA QR MODAL -->
+<div class="modal-overlay" id="deuna-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <h3>De Una · Banco Pichincha</h3>
+    <p>Escanea el QR con tu app bancaria para enviar tu aporte.<br>¡Muchas gracias!</p>
+    <img src="assets/deuna-qr.png" alt="QR De Una — Banco Pichincha" />
+    <button class="modal-close" onclick="document.getElementById('deuna-modal').classList.remove('open')">Cerrar</button>
+  </div>
+</div>
+
+<script>
+function toggleNav() {
+  document.getElementById('nav-toggle').classList.toggle('open');
+  document.getElementById('nav-mobile').classList.toggle('open');
+}
+function closeNav() {
+  document.getElementById('nav-toggle').classList.remove('open');
+  document.getElementById('nav-mobile').classList.remove('open');
+}
+</script>
+
+</body>
+</html>
