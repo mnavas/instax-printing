@@ -62,6 +62,18 @@ class CropCanvas(QWidget):
         self.cx, self.cy = self._w / 2, self._h / 2
         self._apply()
 
+    def clear(self) -> None:
+        """Unload the image and return to the empty 'Click Load' state."""
+        self._img = None
+        self._pix = None
+        self._w = self._h = 0
+        self.angle = 0.0
+        self.zoom = 1.0
+        self.cx = self.cy = 0.0
+        self._drag_last = None
+        self.update()
+        self.changed.emit()
+
     def rotate_by(self, delta_deg: float) -> None:
         self.set_angle(self.angle + delta_deg)
 

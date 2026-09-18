@@ -165,6 +165,11 @@ class CropSlot(QWidget):
             )
         self._on_change()
 
+    def clear(self) -> None:
+        """Unload this slot's photo and reset its controls."""
+        self.canvas.clear()   # emits changed → sliders reset via _sync_from_canvas
+        self._dpi_lbl.setText("")
+
     def is_ready(self) -> bool:
         return self.canvas.is_ready()
 
@@ -172,8 +177,24 @@ class CropSlot(QWidget):
         return self.canvas.get_output()
 
 
+def _next_available_path(directory: str, base: str, ext: str) -> str:
+    """A path in `directory` for `base+ext` that doesn't exist yet, appending
+    _1, _2, … so successive saves never overwrite a previous sheet."""
+    candidate = os.path.join(directory, f"{base}{ext}")
+    if not os.path.exists(candidate):
+        return candidate
+    i = 1
+    while True:
+        candidate = os.path.join(directory, f"{base}_{i}{ext}")
+        if not os.path.exists(candidate):
+            return candidate
+        i += 1
+
+
 class PreviewDialog(QDialog):
     """Shows the composed 4R sheet with Save / Print."""
+
+    _last_save_dir = ""   # remembered across the session
 
     def __init__(self, canvas_bgr, parent=None):
         super().__init__(parent)
@@ -209,12 +230,17 @@ class PreviewDialog(QDialog):
         layout.addLayout(row)
 
     def _save(self) -> None:
+        # Start in the folder used last (this session), and suggest the next
+        # free instax_4r[_N] name there so we never overwrite an earlier sheet.
+        start_dir = PreviewDialog._last_save_dir or os.path.expanduser("~")
+        default_path = _next_available_path(start_dir, "instax_4r", ".jpg")
         path, _ = QFileDialog.getSaveFileName(
-            self, "Save 4R sheet", "instax_4r.jpg",
+            self, "Save 4R sheet", default_path,
             "JPEG (*.jpg);;PNG (*.png);;TIFF (*.tif)",
         )
         if not path:
             return
+        PreviewDialog._last_save_dir = os.path.dirname(path)
         if imaging.imwrite_print(path, self._bgr, cfg.PRINT_DPI):
             QMessageBox.information(self, "Saved", f"Saved at {cfg.PRINT_DPI} DPI:\n{path}")
         else:
@@ -274,6 +300,10 @@ class MainWindow(QMainWindow):
         self._status.setStyleSheet("color: #999; font-size: 12px;")
         bottom.addWidget(self._status)
         bottom.addStretch()
+        self._newsheet = QPushButton("New sheet")
+        self._newsheet.setStyleSheet(_BTN)
+        self._newsheet.clicked.connect(self._on_new_sheet)
+        bottom.addWidget(self._newsheet)
         self._generate = QPushButton("Generate 4R sheet")
         self._generate.setStyleSheet(_ACCENT)
         self._generate.clicked.connect(self._on_generate)
@@ -285,6 +315,7 @@ class MainWindow(QMainWindow):
     def _update_state(self) -> None:
         ready = sum(1 for s in self.slots if s.is_ready())
         self._generate.setEnabled(ready == 3)
+        self._newsheet.setEnabled(ready > 0)
         if ready < 3:
             self._status.setText(f"{ready} / 3 images loaded — load all three to continue.")
             self._status.setStyleSheet("color: #999; font-size: 12px;")
@@ -300,6 +331,21 @@ class MainWindow(QMainWindow):
             else:
                 self._status.setText("All three ready and at good resolution ✓")
                 self._status.setStyleSheet("color: #6ab86a; font-size: 12px;")
+
+    def _on_new_sheet(self) -> None:
+        """Clear all three photos to start a fresh sheet (asks first)."""
+        if any(s.is_ready() for s in self.slots):
+            resp = QMessageBox.question(
+                self, "New sheet",
+                "Clear all three photos and start a new sheet?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if resp != QMessageBox.StandardButton.Yes:
+                return
+        for s in self.slots:
+            s.clear()
+        self._update_state()
 
     def _on_generate(self) -> None:
         crops = [s.get_output() for s in self.slots]

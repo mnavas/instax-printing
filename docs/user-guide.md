@@ -37,7 +37,7 @@ fit on one cheap standard 4R print.
 │  Angle ────────│  Angle ────────│  Angle ────────             │
 │  ≈ 312 DPI     │  ≈ 289 DPI     │  ≈ 205 DPI                  │
 ├────────────────┴────────────────┴────────────────────────────┤
-│  2 / 3 images loaded …                    [ Generate 4R sheet ]│
+│  2 / 3 images loaded …          [ New sheet ] [ Generate 4R sheet ]│
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -144,6 +144,11 @@ Opens a save dialog. Choose **JPEG**, **PNG**, or **TIFF**. The file is written 
 **300 DPI with the physical size embedded**, so a photo lab (or your own printer)
 reproduces it at exactly 15×10 cm without you having to set the size manually.
 
+The dialog opens in the **folder you saved to last** (during the session) and
+suggests the next free name — `instax_4r.jpg`, then `instax_4r_1.jpg`,
+`instax_4r_2.jpg`, and so on — so **saving another sheet never overwrites an
+earlier one**. You can of course rename it to whatever you like.
+
 ### Print…
 
 Opens the system print dialog and sends the sheet straight to a printer at 300
@@ -153,6 +158,19 @@ DPI, scaled to fit the page while keeping its aspect ratio and centred.
 
 Dismisses the preview and returns to the crop stations — your three crops are
 kept, so you can tweak one and regenerate.
+
+---
+
+## Starting a New Sheet
+
+Two ways to start over:
+
+- **Reset one photo** — the **Reset** button on a crop station returns just that
+  frame to centred, full-size, and level (the photo stays loaded).
+- **New sheet** — the **New sheet** button in the bottom bar clears **all three**
+  photos at once so you can build a fresh sheet. It asks for confirmation first
+  (as long as at least one photo is loaded) so you don't wipe your work by
+  accident.
 
 ---
 

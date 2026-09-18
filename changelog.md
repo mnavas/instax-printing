@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.5
+
+- **New sheet** button clears all three photos to start over (with a
+  confirmation prompt when photos are loaded).
+- **Save** now opens in the folder used last (this session) instead of always
+  defaulting to a fixed name.
+- **Save** suggests an incremental name (`instax_4r`, `instax_4r_1`,
+  `instax_4r_2`, …), so saving successive sheets never overwrites a previous one.
+
 ## v0.0.4
 
 - Added a project **landing page** (`index.html`) and full **docs**
