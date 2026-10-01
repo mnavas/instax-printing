@@ -25,10 +25,6 @@ import instax_config as cfg
 import ui_common
 from crop_station import CropSlot
 
-_COMBO = (
-    "QComboBox { background-color: #2a2a2a; color: #ddd; border: 1px solid #444; "
-    "padding: 3px 8px; border-radius: 3px; font-size: 12px; }"
-)
 _MAX_GRID_LINES = 10   # for clearing old row/column stretches on rebuild
 
 
@@ -48,7 +44,7 @@ class CollagePage(QWidget):
             "gutter between photos and choose the border, and see how it looks "
             "before printing."
         )
-        intro.setStyleSheet("color: #aaa; font-size: 12px;")
+        intro.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         intro.setWordWrap(True)
         root.addWidget(intro)
 
@@ -57,14 +53,12 @@ class CollagePage(QWidget):
         controls.setSpacing(8)
         controls.addWidget(self._tag("Format"))
         self._fmt = QComboBox()
-        self._fmt.setStyleSheet(_COMBO)
         for f in cfg.INSTAX_FORMATS:
             self._fmt.addItem(f.label, f.key)
         controls.addWidget(self._fmt)
 
         controls.addWidget(self._tag("Layout"))
         self._layout = QComboBox()
-        self._layout.setStyleSheet(_COMBO)
         for name, template in cfg.COLLAGE_LAYOUTS:
             self._layout.addItem(name, template)
         controls.addWidget(self._layout)
@@ -90,7 +84,7 @@ class CollagePage(QWidget):
         # Bottom bar
         bottom = QHBoxLayout()
         self._status = QLabel("")
-        self._status.setStyleSheet("color: #999; font-size: 12px;")
+        self._status.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         bottom.addWidget(self._status)
         bottom.addStretch()
         self._export = QPushButton("Export collage…")
@@ -105,7 +99,7 @@ class CollagePage(QWidget):
     @staticmethod
     def _tag(text: str) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet("color: #999; font-size: 12px;")
+        lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         return lbl
 
     # -- layout management --
@@ -181,7 +175,7 @@ class CollagePage(QWidget):
         self._new.setEnabled(ready > 0)
         if ready < total:
             self._status.setText(f"{ready} / {total} photos loaded — fill every cell to export.")
-            self._status.setStyleSheet("color: #999; font-size: 12px;")
+            self._status.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         else:
             low = [i + 1 for i, s in enumerate(self._slots) if s.canvas.source_dpi() < 180]
             if low:
@@ -189,10 +183,10 @@ class CollagePage(QWidget):
                     f"Ready — note: cell(s) {', '.join(map(str, low))} are below 180 DPI "
                     "and may look soft."
                 )
-                self._status.setStyleSheet("color: #ff8080; font-size: 12px;")
+                self._status.setStyleSheet(f"color: {ui_common.WARN}; font-size: 12px; font-weight: 600;")
             else:
                 self._status.setText("All cells ready and at good resolution ✓")
-                self._status.setStyleSheet("color: #6ab86a; font-size: 12px;")
+                self._status.setStyleSheet(f"color: {ui_common.OK}; font-size: 12px; font-weight: 600;")
 
     def _on_export(self) -> None:
         crops = [s.get_output() for s in self._slots]
@@ -210,7 +204,7 @@ class CollagePreviewDialog(QDialog):
     def __init__(self, fmt, template, crops, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{fmt.label} collage preview")
-        self.setStyleSheet("background-color: #111; color: #ddd;")
+        self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
         self._fmt = fmt
         self._template = template
         self._crops = crops
@@ -226,10 +220,9 @@ class CollagePreviewDialog(QDialog):
         ctl = QHBoxLayout()
         ctl.setSpacing(8)
         lbl = QLabel("Gutter")
-        lbl.setStyleSheet("color: #999; font-size: 12px;")
+        lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         ctl.addWidget(lbl)
         self._gap = QComboBox()
-        self._gap.setStyleSheet(_COMBO)
         for name, mm in cfg.COLLAGE_GAP_CHOICES:
             self._gap.addItem(name, mm)
         self._gap.setCurrentIndex(1)   # "Thin" default
@@ -237,14 +230,14 @@ class CollagePreviewDialog(QDialog):
         ctl.addWidget(self._gap)
 
         self._border = QCheckBox("Add white instax border (for a normal printer)")
-        self._border.setStyleSheet("color: #ccc; font-size: 12px;")
+        self._border.setStyleSheet(f"color: {ui_common.INK}; font-size: 12px;")
         self._border.toggled.connect(self._render)
         ctl.addWidget(self._border)
         ctl.addStretch()
         layout.addLayout(ctl)
 
         self._hint = QLabel("")
-        self._hint.setStyleSheet("color: #888; font-size: 11px;")
+        self._hint.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 11px;")
         self._hint.setWordWrap(True)
         layout.addWidget(self._hint)
 

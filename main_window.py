@@ -23,22 +23,13 @@ import ui_common
 from collage_page import CollagePage
 from crop_station import CropSlot
 
-_MENU_STYLE = (
-    "QMenuBar { background-color: #1a1a1a; color: #ddd; }"
-    "QMenuBar::item:selected { background-color: #333; }"
-    "QMenu { background-color: #1e1e1e; color: #ddd; border: 1px solid #444; }"
-    "QMenu::item:selected { background-color: #333; }"
-    "QMenu::item:checked { color: #a8e0a8; }"
-)
-
-
 class PreviewDialog(QDialog):
     """Shows the composed 4R sheet with Save / Print."""
 
     def __init__(self, canvas_bgr, parent=None):
         super().__init__(parent)
         self.setWindowTitle("4R print preview — 15×10 cm")
-        self.setStyleSheet("background-color: #111; color: #ddd;")
+        self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
         self._bgr = canvas_bgr
 
         layout = QVBoxLayout(self)
@@ -89,7 +80,7 @@ class SheetPage(QWidget):
             "instax frame covers what you want. When all three are ready, generate "
             "the 4R sheet."
         )
-        intro.setStyleSheet("color: #aaa; font-size: 12px;")
+        intro.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         intro.setWordWrap(True)
         root.addWidget(intro)
 
@@ -102,7 +93,7 @@ class SheetPage(QWidget):
 
         bottom = QHBoxLayout()
         self._status = QLabel("")
-        self._status.setStyleSheet("color: #999; font-size: 12px;")
+        self._status.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         bottom.addWidget(self._status)
         bottom.addStretch()
         self._newsheet = QPushButton("New sheet")
@@ -123,7 +114,7 @@ class SheetPage(QWidget):
         self._newsheet.setEnabled(ready > 0)
         if ready < 3:
             self._status.setText(f"{ready} / 3 images loaded — load all three to continue.")
-            self._status.setStyleSheet("color: #999; font-size: 12px;")
+            self._status.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         else:
             low = [i + 1 for i, s in enumerate(self.slots)
                    if s.canvas.source_dpi() < 180]
@@ -132,10 +123,10 @@ class SheetPage(QWidget):
                     f"Ready — note: photo(s) {', '.join(map(str, low))} are below 180 DPI "
                     "and may look soft."
                 )
-                self._status.setStyleSheet("color: #ff8080; font-size: 12px;")
+                self._status.setStyleSheet(f"color: {ui_common.WARN}; font-size: 12px; font-weight: 600;")
             else:
                 self._status.setText("All three ready and at good resolution ✓")
-                self._status.setStyleSheet("color: #6ab86a; font-size: 12px;")
+                self._status.setStyleSheet(f"color: {ui_common.OK}; font-size: 12px; font-weight: 600;")
 
     def _on_new_sheet(self) -> None:
         """Clear all three photos to start a fresh sheet (asks first)."""
@@ -166,7 +157,7 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("instax-printing")
         self.resize(1240, 860)
-        self.setStyleSheet("background-color: #111; color: #ddd;" + _MENU_STYLE)
+        self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
 
         self._stack = QStackedWidget()
         self._sheet_page = SheetPage()

@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 )
 
 import instax_config as cfg
+import ui_common
 from crop_canvas import CropCanvas
 from ui_common import STYLE_MINI
 
@@ -85,14 +86,14 @@ class CropSlot(QWidget):
         layout.addLayout(arow)
 
         self._dpi_lbl = QLabel("")
-        self._dpi_lbl.setStyleSheet("color: #888; font-size: 11px;")
+        self._dpi_lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 11px;")
         self._dpi_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self._dpi_lbl)
 
     @staticmethod
     def _tag(text: str) -> QLabel:
         lbl = QLabel(text)
-        lbl.setStyleSheet("color: #999; font-size: 11px;")
+        lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 11px;")
         lbl.setFixedWidth(40)
         return lbl
 
@@ -138,8 +139,8 @@ class CropSlot(QWidget):
             warn = "  ⚠ low-res" if dpi < 180 else ""
             self._dpi_lbl.setText(f"≈ {dpi:.0f} DPI{warn}")
             self._dpi_lbl.setStyleSheet(
-                "color: #ff8080; font-size: 11px;" if dpi < 180
-                else "color: #888; font-size: 11px;"
+                f"color: {ui_common.WARN}; font-size: 11px; font-weight: 600;" if dpi < 180
+                else f"color: {ui_common.MUTED}; font-size: 11px;"
             )
         self._on_change()
 

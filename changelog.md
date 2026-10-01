@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.8
+
+- **Instax-inspired visual refresh.** New light, warm palette with the signature
+  **instax pink** as the accent (buttons, crop frames, sliders, menu highlights)
+  and photos on dark canvases for contrast. The whole palette lives in one place
+  (`ui_common`) and a single global stylesheet styles the common widgets.
+- **The checkboxes are now clearly visible** — a white box that fills **pink** when
+  checked (the old dark-on-dark checkbox was almost invisible). Combos, sliders,
+  menus and tooltips got the same consistent treatment.
+
 ## v0.0.7
 
 - **Collages no longer add an outer border.** Photos now fill the instax image

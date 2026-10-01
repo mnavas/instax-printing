@@ -27,7 +27,7 @@ class CropCanvas(QWidget):
         super().__init__(parent)
         self.setMinimumSize(150, 150)
         self.setMouseTracking(True)
-        self.setStyleSheet("background-color: #161616;")
+        self.setStyleSheet("background-color: #201F23;")
 
         self._out_w = out_w
         self._out_h = out_h
@@ -172,18 +172,18 @@ class CropCanvas(QWidget):
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#161616"))
+        painter.fillRect(self.rect(), QColor("#201F23"))
         if self._img is None or self._pix is None:
             # Draw the instax target frame (correct aspect/orientation) so the
             # empty slot reads as portrait/landscape before any photo is loaded.
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             rect = self._empty_frame_rect()
-            painter.fillRect(rect, QColor("#1d1d1d"))
-            pen = QPen(QColor("#3a5a80"), 2)
+            painter.fillRect(rect, QColor("#27262C"))
+            pen = QPen(QColor("#EC4C84"), 2)
             pen.setStyle(Qt.PenStyle.DashLine)
             painter.setPen(pen)
             painter.drawRect(rect)
-            painter.setPen(QColor("#8a8a8a"))
+            painter.setPen(QColor("#A59C92"))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter,
                              "Click Load\nto choose an image")
             return
@@ -214,7 +214,7 @@ class CropCanvas(QWidget):
         painter.fillPath(outside.subtracted(inside), QColor(0, 0, 0, 130))
 
         # Frame outline + rule-of-thirds guides
-        painter.setPen(QPen(QColor("#4a9eff"), 2))
+        painter.setPen(QPen(QColor("#EC4C84"), 2))
         painter.drawPolygon(poly)
         painter.setPen(QPen(QColor(255, 255, 255, 90), 1))
         for i in (1, 2):

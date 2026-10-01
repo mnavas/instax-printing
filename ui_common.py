@@ -13,23 +13,81 @@ from PyQt6.QtWidgets import QDialog, QFileDialog, QMessageBox
 import imaging
 import instax_config as cfg
 
+# ── instax-inspired palette ──────────────────────────────────────────────
+# Clean light panels with the signature instax pink and a few playful accents;
+# image areas stay dark for good photo contrast (like the real white-framed
+# instax print on a colourful body).
+INK     = "#2C2722"   # primary text (warm near-black)
+MUTED   = "#8C847B"   # secondary text
+BG      = "#F4F1EC"   # app background (warm off-white)
+PANEL   = "#FFFFFF"   # cards / inputs
+BORDER  = "#E4DED4"   # hairline borders
+CANVAS  = "#201F23"   # image/crop background (dark)
+PINK    = "#EC4C84"   # instax brand pink (primary accent)
+PINK_DK = "#D6356F"   # pink hover/pressed
+PINK_SOFT = "#FBE4EE" # pink tint (hover backgrounds)
+MINT    = "#2FBBA4"   # playful accent
+SKY     = "#3FA3E6"   # playful accent
+SUN     = "#F6C544"   # playful accent
+OK      = "#2EA06A"   # status: good
+WARN    = "#D6364F"   # status: warning
+
+STYLE_ACCENT = (
+    f"QPushButton {{ background-color: {PINK}; color: #ffffff; border: none; "
+    f"padding: 8px 20px; border-radius: 9px; font-size: 13px; font-weight: 700; }}"
+    f"QPushButton:hover {{ background-color: {PINK_DK}; }}"
+    f"QPushButton:disabled {{ background-color: #ECD6DF; color: #ffffff; }}"
+)
 STYLE_BTN = (
-    "QPushButton { background-color: #333; color: #ddd; border: 1px solid #555; "
-    "padding: 5px 12px; border-radius: 4px; font-size: 12px; }"
-    "QPushButton:hover { background-color: #444; }"
-    "QPushButton:disabled { color: #666; border-color: #333; }"
+    f"QPushButton {{ background-color: {PANEL}; color: {INK}; "
+    f"border: 1.5px solid {BORDER}; padding: 7px 16px; border-radius: 9px; "
+    f"font-size: 12px; font-weight: 600; }}"
+    f"QPushButton:hover {{ border-color: {PINK}; color: {PINK}; }}"
+    f"QPushButton:disabled {{ color: #BEB6AC; border-color: #EEE9E1; }}"
 )
 STYLE_MINI = (
-    "QPushButton { background-color: #2a2a2a; color: #bbb; border: 1px solid #444; "
-    "padding: 3px 8px; border-radius: 3px; font-size: 12px; }"
-    "QPushButton:hover { background-color: #383838; }"
+    f"QPushButton {{ background-color: #EFEAE1; color: {INK}; border: none; "
+    f"padding: 5px 10px; border-radius: 7px; font-size: 12px; font-weight: 600; }}"
+    f"QPushButton:hover {{ background-color: #E7E0D4; color: {PINK_DK}; }}"
 )
-STYLE_ACCENT = (
-    "QPushButton { background-color: #1e4a1e; color: #a8e0a8; border: 1px solid #3a7a3a; "
-    "padding: 7px 18px; border-radius: 4px; font-size: 13px; font-weight: bold; }"
-    "QPushButton:hover { background-color: #2a6a2a; }"
-    "QPushButton:disabled { background-color: #262626; color: #666; border-color: #333; }"
-)
+
+# Global stylesheet applied once on the QApplication — makes the common widgets
+# (checkboxes, combos, sliders, menus, tooltips) consistent and clearly visible.
+APP_QSS = f"""
+QWidget {{ color: {INK}; font-size: 12px; }}
+QToolTip {{ background: {INK}; color: #ffffff; border: none; padding: 4px 8px; }}
+
+QCheckBox {{ color: {INK}; spacing: 8px; }}
+QCheckBox::indicator {{ width: 18px; height: 18px; border-radius: 5px;
+    border: 2px solid #B6ADA2; background: {PANEL}; }}
+QCheckBox::indicator:hover {{ border-color: {PINK}; }}
+QCheckBox::indicator:checked {{ background: {PINK}; border: 2px solid {PINK}; }}
+QCheckBox::indicator:checked:hover {{ background: {PINK_DK}; border-color: {PINK_DK}; }}
+
+QComboBox {{ background: {PANEL}; color: {INK}; border: 1.5px solid {BORDER};
+    border-radius: 7px; padding: 4px 10px; }}
+QComboBox:hover {{ border-color: {PINK}; }}
+QComboBox::drop-down {{ border: none; width: 20px; }}
+QComboBox QAbstractItemView {{ background: {PANEL}; color: {INK};
+    border: 1px solid {BORDER}; outline: none;
+    selection-background-color: {PINK}; selection-color: #ffffff; }}
+
+QSlider::groove:horizontal {{ height: 5px; border-radius: 3px; background: {BORDER}; }}
+QSlider::sub-page:horizontal {{ background: {PINK}; border-radius: 3px; }}
+QSlider::handle:horizontal {{ width: 15px; height: 15px; margin: -6px 0;
+    border-radius: 8px; background: {PINK}; border: 2px solid #ffffff; }}
+QSlider::handle:horizontal:hover {{ background: {PINK_DK}; }}
+
+QMenuBar {{ background: {PANEL}; color: {INK}; border-bottom: 1px solid {BORDER}; }}
+QMenuBar::item {{ padding: 7px 12px; background: transparent; }}
+QMenuBar::item:selected {{ background: {PINK_SOFT}; color: {PINK_DK}; border-radius: 6px; }}
+QMenu {{ background: {PANEL}; color: {INK}; border: 1px solid {BORDER}; padding: 4px; }}
+QMenu::item {{ padding: 6px 22px; border-radius: 5px; }}
+QMenu::item:selected {{ background: {PINK_SOFT}; color: {PINK_DK}; }}
+QMenu::item:checked {{ color: {PINK_DK}; font-weight: 700; }}
+
+QMessageBox {{ background: {BG}; }}
+"""
 
 # Folder the user saved to last, shared across both tools for the session.
 _last_save_dir = ""
