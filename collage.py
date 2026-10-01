@@ -44,10 +44,12 @@ def cell_output_sizes(fmt: cfg.InstaxFormat, template, gap_mm: float = cfg.COLLA
 
 
 def build_collage(fmt: cfg.InstaxFormat, template, crops: list[np.ndarray],
-                  gap_mm: float = cfg.COLLAGE_GAP_MM, bg=cfg.COLLAGE_BG) -> np.ndarray:
-    """Assemble the bare collage image area (the instax printer's native size).
-    `crops` must hold exactly len(template) images. Add a border afterwards with
-    `add_border` if printing on a normal printer."""
+                  gap_mm: float = cfg.COLLAGE_GAP_MM, with_border: bool = False,
+                  bg=cfg.COLLAGE_BG) -> np.ndarray:
+    """Assemble the collage. `crops` must hold exactly len(template) images.
+    `gap_mm` is the gutter between photos. Returns the bare image area (for an
+    instax printer, which adds the border itself), or — with ``with_border`` — the
+    image area wrapped in a full white instax card (for a normal printer)."""
     if len(crops) != len(template):
         raise ValueError("build_collage expects exactly len(template) crops")
 
@@ -56,33 +58,11 @@ def build_collage(fmt: cfg.InstaxFormat, template, crops: list[np.ndarray],
     area = np.full((h_px, w_px, 3), bg, dtype=np.uint8)
     for (x, y, cw, ch), crop in zip(cell_rects(template, w_px, h_px, gap), crops):
         area[y:y + ch, x:x + cw] = cv2.resize(crop, (cw, ch), interpolation=cv2.INTER_AREA)
-    return area
 
+    if not with_border:
+        return area
 
-# Border modes for export (chosen in the print preview).
-BORDER_NONE = "none"    # image only — for an instax printer (film adds the border)
-BORDER_EVEN = "even"    # a plain white border of a chosen width on all sides
-BORDER_FILM = "film"    # the real instax card border (thin top/sides, thick bottom)
-
-
-def add_border(area: np.ndarray, fmt: cfg.InstaxFormat, mode: str,
-               even_mm: float = 4.0) -> np.ndarray:
-    """Wrap the collage image area in a border for a normal printer.
-
-    `BORDER_NONE` returns it unchanged; `BORDER_EVEN` adds `even_mm` of white on
-    every side; `BORDER_FILM` reproduces the asymmetric instax card border.
-    """
-    h, w = area.shape[:2]
-    if mode == BORDER_FILM:
-        side, top, bottom = fmt.borders_px()
-        card = np.full((top + h + bottom, side + w + side, 3), 255, dtype=np.uint8)
-        card[top:top + h, side:side + w] = area
-        return card
-    if mode == BORDER_EVEN:
-        m = max(0, round(even_mm / 25.4 * fmt.dpi_x))
-        if m == 0:
-            return area
-        out = np.full((h + 2 * m, w + 2 * m, 3), 255, dtype=np.uint8)
-        out[m:m + h, m:m + w] = area
-        return out
-    return area
+    side, top, bottom = fmt.borders_px()
+    card = np.full((top + h_px + bottom, side + w_px + side, 3), 255, dtype=np.uint8)
+    card[top:top + h_px, side:side + w_px] = area
+    return card

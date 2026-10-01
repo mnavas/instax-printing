@@ -6,8 +6,9 @@
   area edge-to-edge, because the instax film already supplies the physical white
   border — the old version added its own, which doubled up when printed on an
   instax printer.
-- **Gutter between photos is now thin and selectable** — **None / Thin / Medium**
-  (default Thin), instead of a fixed 2 mm margin on every side.
+- **Gutter between photos is thin and selectable** — **None / Thin / Medium**
+  (default Thin), instead of a fixed 2 mm margin on every side. It's chosen in the
+  **export preview**, so you can see it and adjust before printing.
 - **More layouts** (15 total), including asymmetric ones: `1`, `2` (side-by-side
   / stacked), `3` (columns / rows / 1 top + 2 / 1 bottom + 2 / 1 left + 2 / 1
   right + 2), `4` (2×2 / columns / rows), `5` (1 top + 4), `6` (3×2), `9` (3×3).
@@ -18,11 +19,11 @@
 - **Changing the Format, Layout, or Gutter no longer clears your photos.** The
   crop stations are reused, so loaded photos (and their framing) survive the
   change — only cells that a smaller layout removes are dropped.
-- **The border is now chosen in the export preview**, where you can see it before
-  deciding: **None** (image only, for an instax printer — default), an **even
-  white border** with an adjustable width (1–15 mm), or the **instax film border**
-  (thick bottom). The preview updates live. An instax printer adds its own border,
-  so **None** is right for instax; the others are for a normal printer.
+- **The gutter and the border are both chosen in the export preview**, which
+  updates live so you can see how it looks and decide before printing. The border
+  is a simple toggle: **off** = image only (for an instax printer — the film adds
+  the white border; default), **on** = the full white instax card border (for a
+  normal printer).
 - Also shown on empty crop slots: the instax target frame, so orientation is
   obvious before loading (portrait for Mini, landscape for Wide).
 

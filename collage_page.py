@@ -8,6 +8,7 @@ import cv2
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QGridLayout,
@@ -15,7 +16,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
-    QSlider,
     QVBoxLayout,
     QWidget,
 )
@@ -43,10 +43,10 @@ class CollagePage(QWidget):
         root.setSpacing(8)
 
         intro = QLabel(
-            "Build a collage sized for an instax print. Pick a format, a layout, "
-            "and the gutter between photos, load a photo into each cell, then "
-            "export — a plain image for an instax printer (the film adds the white "
-            "border), or wrapped in a border for a normal printer."
+            "Build a collage sized for an instax print. Pick a format and a "
+            "layout, load a photo into each cell, then Export — where you set the "
+            "gutter between photos and choose the border, and see how it looks "
+            "before printing."
         )
         intro.setStyleSheet("color: #aaa; font-size: 12px;")
         intro.setWordWrap(True)
@@ -69,14 +69,6 @@ class CollagePage(QWidget):
             self._layout.addItem(name, template)
         controls.addWidget(self._layout)
 
-        controls.addWidget(self._tag("Gutter"))
-        self._gap = QComboBox()
-        self._gap.setStyleSheet(_COMBO)
-        for name, mm in cfg.COLLAGE_GAP_CHOICES:
-            self._gap.addItem(name, mm)
-        self._gap.setCurrentIndex(1)   # "Thin" default
-        controls.addWidget(self._gap)
-
         controls.addStretch()
         self._new = QPushButton("New collage")
         self._new.setStyleSheet(ui_common.STYLE_BTN)
@@ -87,7 +79,6 @@ class CollagePage(QWidget):
         # Connect after populating so no premature rebuild fires
         self._fmt.currentIndexChanged.connect(self._rebuild_cells)
         self._layout.currentIndexChanged.connect(self._rebuild_cells)
-        self._gap.currentIndexChanged.connect(self._rebuild_cells)
 
         # Cell grid (mirrors the layout)
         self._grid_host = QWidget()
@@ -121,12 +112,13 @@ class CollagePage(QWidget):
     def _current(self):
         fmt = cfg.format_by_key(self._fmt.currentData())
         template = self._layout.currentData()
-        gap_mm = self._gap.currentData()
-        return fmt, template, gap_mm
+        return fmt, template
 
     def _rebuild_cells(self) -> None:
-        fmt, template, gap_mm = self._current()
-        sizes = collage.cell_output_sizes(fmt, template, gap_mm)
+        fmt, template = self._current()
+        # Size the crop stations at a nominal gutter; the actual gutter is chosen
+        # in the export preview, which resizes each crop into its cell there.
+        sizes = collage.cell_output_sizes(fmt, template, cfg.COLLAGE_GAP_MM)
         n = len(template)
 
         # Reuse existing stations so loaded photos survive a Format / Layout /
@@ -207,22 +199,22 @@ class CollagePage(QWidget):
         if any(c is None for c in crops):
             QMessageBox.warning(self, "Not ready", "Every cell must have a photo first.")
             return
-        fmt, template, gap_mm = self._current()
-        CollagePreviewDialog(fmt, template, crops, gap_mm, self).exec()
+        fmt, template = self._current()
+        CollagePreviewDialog(fmt, template, crops, self).exec()
 
 
 class CollagePreviewDialog(QDialog):
-    """Preview the collage, choose the border here (none / even / film), see how
-    it looks, then Save / Print."""
+    """Preview the collage, set the gutter between photos and the border here, see
+    how it looks, then Save / Print."""
 
-    def __init__(self, fmt, template, crops, gap_mm, parent=None):
+    def __init__(self, fmt, template, crops, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{fmt.label} collage preview")
         self.setStyleSheet("background-color: #111; color: #ddd;")
         self._fmt = fmt
+        self._template = template
+        self._crops = crops
         self._bgr = None
-        # The bare image area is fixed; only the border changes as you preview.
-        self._area = collage.build_collage(fmt, template, crops, gap_mm)
 
         layout = QVBoxLayout(self)
         self._img_lbl = QLabel()
@@ -230,35 +222,26 @@ class CollagePreviewDialog(QDialog):
         self._img_lbl.setMinimumSize(360, 360)
         layout.addWidget(self._img_lbl)
 
-        # Border controls
-        brow = QHBoxLayout()
-        brow.setSpacing(8)
-        lbl = QLabel("Border")
+        # Gutter (space between photos) + instax border — both live.
+        ctl = QHBoxLayout()
+        ctl.setSpacing(8)
+        lbl = QLabel("Gutter")
         lbl.setStyleSheet("color: #999; font-size: 12px;")
-        brow.addWidget(lbl)
-        self._mode = QComboBox()
-        self._mode.setStyleSheet(_COMBO)
-        self._mode.addItem("None — for an instax printer", collage.BORDER_NONE)
-        self._mode.addItem("Even white border", collage.BORDER_EVEN)
-        self._mode.addItem("Instax film border (thick bottom)", collage.BORDER_FILM)
-        self._mode.currentIndexChanged.connect(self._render)
-        brow.addWidget(self._mode)
+        ctl.addWidget(lbl)
+        self._gap = QComboBox()
+        self._gap.setStyleSheet(_COMBO)
+        for name, mm in cfg.COLLAGE_GAP_CHOICES:
+            self._gap.addItem(name, mm)
+        self._gap.setCurrentIndex(1)   # "Thin" default
+        self._gap.currentIndexChanged.connect(self._render)
+        ctl.addWidget(self._gap)
 
-        self._size_lbl = QLabel("Width")
-        self._size_lbl.setStyleSheet("color: #999; font-size: 12px;")
-        brow.addWidget(self._size_lbl)
-        self._size = QSlider(Qt.Orientation.Horizontal)
-        self._size.setRange(1, 15)          # mm
-        self._size.setValue(4)
-        self._size.setFixedWidth(140)
-        self._size.valueChanged.connect(self._render)
-        brow.addWidget(self._size)
-        self._size_val = QLabel("4 mm")
-        self._size_val.setStyleSheet("color: #bbb; font-size: 12px;")
-        self._size_val.setFixedWidth(42)
-        brow.addWidget(self._size_val)
-        brow.addStretch()
-        layout.addLayout(brow)
+        self._border = QCheckBox("Add white instax border (for a normal printer)")
+        self._border.setStyleSheet("color: #ccc; font-size: 12px;")
+        self._border.toggled.connect(self._render)
+        ctl.addWidget(self._border)
+        ctl.addStretch()
+        layout.addLayout(ctl)
 
         self._hint = QLabel("")
         self._hint.setStyleSheet("color: #888; font-size: 11px;")
@@ -283,22 +266,15 @@ class CollagePreviewDialog(QDialog):
         self._render()
 
     def _render(self) -> None:
-        mode = self._mode.currentData()
-        even = mode == collage.BORDER_EVEN
-        self._size.setEnabled(even)
-        self._size_lbl.setEnabled(even)
-        self._size_val.setText(f"{self._size.value()} mm")
-        self._size_val.setEnabled(even)
-
-        self._bgr = collage.add_border(self._area, self._fmt, mode, float(self._size.value()))
-
-        if mode == collage.BORDER_NONE:
-            self._hint.setText("Image only — send this to an instax printer; the film adds the white border.")
-        elif mode == collage.BORDER_FILM:
-            self._hint.setText("Full instax card border — for a normal printer (an instax printer would double it).")
-        else:
-            self._hint.setText("Even white border — for a normal printer.")
-
+        with_border = self._border.isChecked()
+        self._bgr = collage.build_collage(
+            self._fmt, self._template, self._crops, self._gap.currentData(), with_border
+        )
+        self._hint.setText(
+            "Full instax card border — for a normal printer (an instax printer "
+            "adds its own, so you'd get a double border)." if with_border else
+            "Image only — send this to an instax printer; the film adds the border."
+        )
         rgb = cv2.cvtColor(self._bgr, cv2.COLOR_BGR2RGB)
         h, w = rgb.shape[:2]
         qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
@@ -309,9 +285,7 @@ class CollagePreviewDialog(QDialog):
         self._img_lbl.setPixmap(pix)
 
     def _save(self) -> None:
-        tail = {collage.BORDER_NONE: "image",
-                collage.BORDER_EVEN: "border",
-                collage.BORDER_FILM: "film"}[self._mode.currentData()]
+        tail = "border" if self._border.isChecked() else "image"
         ui_common.save_image(self, self._bgr, f"instax_{self._fmt.key}_collage_{tail}",
                              dpi=round(self._fmt.dpi_x))
 
