@@ -214,10 +214,11 @@ At the top of the tool:
   - **Instax Mini** — 46×62 mm image (portrait)
   - **Instax Square** — 62×62 mm image
   - **Instax Wide** — 99×62 mm image (landscape)
-- **Layout** — a preset arrangement that fills the frame (13 to choose from):
-  **1 photo**; **2** side-by-side or stacked; **3** columns, rows, *1 big + 2*, or
-  *1 left + 2*; **4** as a 2×2 grid, columns, or rows; **5** as *1 big + 4*; **6**
-  as 3×2; **9** as 3×3.
+- **Layout** — a preset arrangement that fills the frame (15 to choose from):
+  **1 photo**; **2** side-by-side or stacked; **3** columns, rows, or one big
+  photo plus two small (*1 top + 2*, *1 bottom + 2*, *1 left + 2*, *1 right + 2*);
+  **4** as a 2×2 grid, columns, or rows; **5** as *1 top + 4*; **6** as 3×2; **9**
+  as 3×3. The big cell is always **#1**.
 - **Gutter** — the thin white line between photos: **None**, **Thin** (default),
   or **Medium**.
 

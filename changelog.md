@@ -8,9 +8,11 @@
   instax printer.
 - **Gutter between photos is now thin and selectable** — **None / Thin / Medium**
   (default Thin), instead of a fixed 2 mm margin on every side.
-- **More layouts** (13 total), including asymmetric ones: `1`, `2` (side-by-side
-  / stacked), `3` (columns / rows / 1 big + 2 / 1 left + 2), `4` (2×2 / columns /
-  rows), `5` (1 big + 4), `6` (3×2), `9` (3×3).
+- **More layouts** (15 total), including asymmetric ones: `1`, `2` (side-by-side
+  / stacked), `3` (columns / rows / 1 top + 2 / 1 bottom + 2 / 1 left + 2 / 1
+  right + 2), `4` (2×2 / columns / rows), `5` (1 top + 4), `6` (3×2), `9` (3×3).
+  The "1 + 2" styles come in all four orientations (big on top / bottom / left /
+  right).
 - The **crop-station grid now mirrors the chosen layout** (correct cell sizes,
   spans, and orientation).
 - The **white instax border** is now clearly an option for a *normal* printer
