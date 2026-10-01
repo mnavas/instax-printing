@@ -233,23 +233,31 @@ Each cell is a crop station exactly like the sheet tool: **Load** a photo, then
 shape, and each cell shows its own effective-DPI readout (red below 180). Photos
 fill the frame **edge-to-edge** — only the chosen gutter separates them.
 
-### 3 — Export (image, or with border)
+### 3 — Export: pick the border in the preview
 
-Click **Export collage…** once every cell is filled.
+Click **Export collage…** once every cell is filled. The preview shows the
+finished collage, and a **Border** control lets you try each option and see how it
+looks before you commit:
 
-- **Default: image only.** The output is exactly the instax printer's native
-  image resolution (600×800 Mini, 800×800 Square, 1260×840 Wide) with **no outer
-  border** — send this to an instax printer, and the **film cartridge provides the
-  physical white border**. (This is why the collage no longer adds its own border:
-  otherwise you'd get a *double* border on an instax print.)
-- **Optional — "Add white instax border":** wraps the collage in a full white
-  instax card (thin top/sides, thick bottom). Use this **only when printing on a
-  normal printer** to mimic the instax look — leave it **off for an instax
-  printer**.
+- **None — for an instax printer** (default): the bare image area at the printer's
+  native resolution (600×800 Mini, 800×800 Square, 1260×840 Wide), with **no outer
+  border**. The **film cartridge provides the physical white border**, so adding
+  one here would *double* it on an instax print.
+- **Even white border:** a plain white margin on all sides, with an adjustable
+  **width (1–15 mm)**. For a normal printer.
+- **Instax film border:** the full instax card look (thin top/sides, thick
+  bottom). For a normal printer — an instax printer would double it.
+
+The preview updates as you change the border and width, so you can compare and
+decide which to print.
 
 **Save…** writes a JPEG/PNG/TIFF with the instax print DPI embedded (using the
 last-used folder and the same incremental naming as the sheet tool), and
 **Print…** sends it to a printer. **New collage** clears every cell to start over.
+
+> Changing the Format, Layout, or Gutter **keeps your loaded photos** — only cells
+> that a smaller layout removes are dropped — so you can tweak freely without
+> starting over.
 
 ---
 

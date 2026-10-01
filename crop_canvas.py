@@ -61,6 +61,8 @@ class CropCanvas(QWidget):
             self._phys_w_mm = phys_w_mm
         if self._img is not None:
             self._apply()
+        else:
+            self.update()   # refresh the empty target frame's aspect ratio
 
     def set_image(self, path) -> bool:
         img = imaging.imread(path)

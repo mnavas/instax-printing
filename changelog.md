@@ -15,10 +15,16 @@
   right).
 - The **crop-station grid now mirrors the chosen layout** (correct cell sizes,
   spans, and orientation).
-- The **white instax border** is now clearly an option for a *normal* printer
-  only (off by default) — an instax printer adds its own, so leave it off for
-  instax. Also shown on empty crop slots: the instax target frame, so orientation
-  is obvious before loading (portrait for Mini, landscape for Wide).
+- **Changing the Format, Layout, or Gutter no longer clears your photos.** The
+  crop stations are reused, so loaded photos (and their framing) survive the
+  change — only cells that a smaller layout removes are dropped.
+- **The border is now chosen in the export preview**, where you can see it before
+  deciding: **None** (image only, for an instax printer — default), an **even
+  white border** with an adjustable width (1–15 mm), or the **instax film border**
+  (thick bottom). The preview updates live. An instax printer adds its own border,
+  so **None** is right for instax; the others are for a normal printer.
+- Also shown on empty crop slots: the instax target frame, so orientation is
+  obvious before loading (portrait for Mini, landscape for Wide).
 
 ## v0.0.6
 
