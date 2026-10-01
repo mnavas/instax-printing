@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import cv2
 import numpy as np
-from PyQt6.QtCore import QPointF, Qt, pyqtSignal
+from PyQt6.QtCore import QPointF, QRectF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
 from PyQt6.QtWidgets import QWidget
 
@@ -139,6 +139,19 @@ class CropCanvas(QWidget):
         self.update()
         self.changed.emit()
 
+    def _empty_frame_rect(self) -> QRectF:
+        """Centred rectangle with the crop's aspect ratio, for the empty state."""
+        margin = 14.0
+        avail_w = max(1.0, self.width() - 2 * margin)
+        avail_h = max(1.0, self.height() - 2 * margin)
+        ar = self._out_w / self._out_h
+        fw = avail_w
+        fh = fw / ar
+        if fh > avail_h:
+            fh = avail_h
+            fw = fh * ar
+        return QRectF((self.width() - fw) / 2, (self.height() - fh) / 2, fw, fh)
+
     def _compute_view(self) -> None:
         if self._img is None:
             return
@@ -159,9 +172,18 @@ class CropCanvas(QWidget):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor("#161616"))
         if self._img is None or self._pix is None:
-            painter.setPen(QColor("#666"))
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
-                             "Click Load to choose an image")
+            # Draw the instax target frame (correct aspect/orientation) so the
+            # empty slot reads as portrait/landscape before any photo is loaded.
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            rect = self._empty_frame_rect()
+            painter.fillRect(rect, QColor("#1d1d1d"))
+            pen = QPen(QColor("#3a5a80"), 2)
+            pen.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(pen)
+            painter.drawRect(rect)
+            painter.setPen(QColor("#8a8a8a"))
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter,
+                             "Click Load\nto choose an image")
             return
 
         self._compute_view()
