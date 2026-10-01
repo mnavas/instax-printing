@@ -189,24 +189,31 @@ format's instax printer** (`print_px_w × print_px_h`). Everything else is deriv
 - `gap_px(gap_mm)` — the white gutter width in pixels.
 
 `INSTAX_FORMATS` holds Mini (600×800), Square (800×800), and Wide (1260×840).
-`COLLAGE_LAYOUTS` holds the preset `(label, rows, cols)` grids; `COLLAGE_GAP_MM`
-and `COLLAGE_BG` set the gutter.
+`COLLAGE_LAYOUTS` holds `(label, template)` entries, where a **template** is a
+list of normalised `(x, y, w, h)` cell rectangles in `0–1` that tile the frame
+(a `_grid(rows, cols)` helper generates the regular ones; asymmetric layouts such
+as *1 big + 4* are listed explicitly). `COLLAGE_GAP_CHOICES` (None / Thin /
+Medium) and `COLLAGE_GAP_MM` set the gutter; `COLLAGE_BG` its colour.
 
 ### Building a collage
 
 ```
-cell_output_size(fmt, rows, cols)   # px size + physical width of one cell
-build_collage(fmt, rows, cols, crops, with_border)
-  ├─ grid_cells(...)                 # (x, y, w, h) of each cell, gutter included
-  ├─ blit each crop into its cell    # at the printer's native resolution
+cell_output_sizes(fmt, template, gap_mm)   # per-cell (w, h, phys_w_mm)
+build_collage(fmt, template, crops, with_border, gap_mm)
+  ├─ cell_rects(template, W, H, gap)   # (x, y, w, h) per cell, filling edge-to-edge
+  ├─ blit each crop into its cell      # at the printer's native resolution
   └─ with_border?  paste the image area inside a full white instax card
 ```
 
+`cell_rects` tiles the image area **edge-to-edge** with a `gap` gutter only
+*between* neighbours — outer edges stay flush, because the instax **film supplies
+the physical border** (adding an outer margin here would double it on an instax
+print). Cells may differ in size, so `cell_output_sizes` returns a size per cell.
+
 `build_collage` returns the **bare image area** at the printer's native
-resolution (`with_border=False`) — ready to send to an instax printer, which adds
-the physical border itself — or the **full card** with the white instax border
-drawn on (`with_border=True`). It raises `ValueError` unless given exactly
-`rows*cols` crops.
+resolution (`with_border=False`) — send to an instax printer — or, for a *normal*
+printer, the image area wrapped in a full white instax card (`with_border=True`).
+It raises `ValueError` unless given exactly `len(template)` crops.
 
 ---
 
@@ -235,12 +242,16 @@ Print… / Close** via the shared `ui_common` helpers.
 
 ### `CollagePage` / `CollagePreviewDialog` — `collage_page.py`
 
-`CollagePage` has the **Format** and **Layout** combo boxes over a `QGridLayout` of
-`CropSlot`s. Changing either combo calls `_rebuild_cells()`, which tears down the
-old stations and builds `rows×cols` fresh ones sized by `collage.cell_output_size`.
-`_on_export` collects the crops and opens `CollagePreviewDialog`, which has a
-**border** checkbox that re-renders between image-only and bordered via
-`collage.build_collage`, plus Save/Print (DPI = the format's print DPI).
+`CollagePage` has **Format**, **Layout**, and **Gutter** combo boxes over a
+`QGridLayout` of `CropSlot`s. Changing any of them calls `_rebuild_cells()`, which
+tears down the old stations and builds one `CropSlot` per template cell, sized by
+`collage.cell_output_sizes`. The grid **mirrors the layout**: the template's cut
+lines are mapped to grid rows/columns (with `addWidget` row/column spans and
+proportional stretch), so a *1 big + 4* layout shows a big station over a row of
+four. `_on_export` collects the crops and opens `CollagePreviewDialog`, which has
+an optional **instax border** checkbox (off by default — for a normal printer
+only) that re-renders via `collage.build_collage`, plus Save/Print (DPI = the
+format's print DPI).
 
 ### `MainWindow(QMainWindow)` — `main_window.py`
 

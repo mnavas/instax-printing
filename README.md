@@ -41,17 +41,20 @@ little under full size. All layout numbers live in
 ## Instax Collage
 
 **Tools → Instax Collage** combines several photos into a single instax-sized
-image. Pick a **format** (Mini 46×62 mm, Square 62×62 mm, or Wide 99×62 mm) and a
-preset **grid layout** (1, 2, 3, or 2×2), frame each cell, then export:
+image. Pick a **format** (Mini 46×62 mm, Square 62×62 mm, or Wide 99×62 mm), a
+**layout** (13 presets — grids plus asymmetric ones like *1 big + 4*), and the
+**gutter** between photos (None / Thin / Medium), frame each cell, then export:
 
-- **Image only** — at the instax printer's native resolution (600×800 Mini,
-  800×800 Square, 1260×840 Wide). Send it to an instax printer, which adds the
-  physical white border itself.
-- **With border** — the collage inside a full white instax card, for a normal
-  printer or a true-to-life preview.
+- **Image only** (default) — photos fill the image area edge-to-edge at the
+  printer's native resolution (600×800 Mini, 800×800 Square, 1260×840 Wide), with
+  **no outer border**. Send it to an instax printer, which adds the physical white
+  border itself. (The collage deliberately adds none — otherwise you'd get a
+  *double* border on an instax print.)
+- **With border** (optional) — the collage inside a full white instax card, for a
+  **normal** printer only. Leave it off for an instax printer.
 
-Toggle the two in the export preview. Instax formats, layouts, and the gutter all
-live in [`instax_config.py`](instax_config.py).
+Instax formats, layouts, and gutter sizes all live in
+[`instax_config.py`](instax_config.py).
 
 ## Run
 

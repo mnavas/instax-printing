@@ -143,16 +143,34 @@ def format_by_key(key: str) -> InstaxFormat:
     return INSTAX_FORMATS[0]
 
 
-# Preset collage layouts: (label, rows, cols). Cells fill one instax frame in
-# reading order (left→right, top→bottom).
+# Preset collage layouts: (label, [cells]) where each cell is a normalised
+# (x, y, w, h) rectangle in the instax frame (0–1). Cells fill the frame
+# edge-to-edge in reading order — the instax film supplies the outer white
+# border, so the collage itself adds none (only a thin gutter between photos).
+def _grid(rows: int, cols: int):
+    return [(c / cols, r / rows, 1 / cols, 1 / rows)
+            for r in range(rows) for c in range(cols)]
+
+
 COLLAGE_LAYOUTS = [
-    ("1 photo",          1, 1),
-    ("2 — stacked",      2, 1),
-    ("2 — side by side", 1, 2),
-    ("3 — rows",         3, 1),
-    ("3 — columns",      1, 3),
-    ("4 — grid (2×2)",   2, 2),
+    ("1 photo",            _grid(1, 1)),
+    ("2 — side by side",   _grid(1, 2)),
+    ("2 — stacked",        _grid(2, 1)),
+    ("3 — columns",        _grid(1, 3)),
+    ("3 — rows",           _grid(3, 1)),
+    ("3 — 1 big + 2",      [(0, 0, 1, 0.6), (0, 0.6, 0.5, 0.4), (0.5, 0.6, 0.5, 0.4)]),
+    ("3 — 1 left + 2",     [(0, 0, 0.6, 1), (0.6, 0, 0.4, 0.5), (0.6, 0.5, 0.4, 0.5)]),
+    ("4 — grid (2×2)",     _grid(2, 2)),
+    ("4 — columns",        _grid(1, 4)),
+    ("4 — rows",           _grid(4, 1)),
+    ("5 — 1 big + 4",      [(0, 0, 1, 0.6),
+                            (0.0, 0.6, 0.25, 0.4), (0.25, 0.6, 0.25, 0.4),
+                            (0.5, 0.6, 0.25, 0.4), (0.75, 0.6, 0.25, 0.4)]),
+    ("6 — grid (3×2)",     _grid(3, 2)),
+    ("9 — grid (3×3)",     _grid(3, 3)),
 ]
 
-COLLAGE_GAP_MM = 2.0            # white gutter between (and around) collage cells
-COLLAGE_BG = (255, 255, 255)   # BGR — the gutter / background colour
+# Gutter between photos (NOT an outer border — the film border covers the edge).
+COLLAGE_GAP_CHOICES = [("None", 0.0), ("Thin", 0.8), ("Medium", 1.6)]
+COLLAGE_GAP_MM = 0.8           # default: a thin hairline between photos
+COLLAGE_BG = (255, 255, 255)   # BGR — the gutter colour

@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.0.7
+
+- **Collages no longer add an outer border.** Photos now fill the instax image
+  area edge-to-edge, because the instax film already supplies the physical white
+  border — the old version added its own, which doubled up when printed on an
+  instax printer.
+- **Gutter between photos is now thin and selectable** — **None / Thin / Medium**
+  (default Thin), instead of a fixed 2 mm margin on every side.
+- **More layouts** (13 total), including asymmetric ones: `1`, `2` (side-by-side
+  / stacked), `3` (columns / rows / 1 big + 2 / 1 left + 2), `4` (2×2 / columns /
+  rows), `5` (1 big + 4), `6` (3×2), `9` (3×3).
+- The **crop-station grid now mirrors the chosen layout** (correct cell sizes,
+  spans, and orientation).
+- The **white instax border** is now clearly an option for a *normal* printer
+  only (off by default) — an instax printer adds its own, so leave it off for
+  instax. Also shown on empty crop slots: the instax target frame, so orientation
+  is obvious before loading (portrait for Mini, landscape for Wide).
+
 ## v0.0.6
 
 - **Main menu** added. A **Tools** menu switches between the two tools; **File →

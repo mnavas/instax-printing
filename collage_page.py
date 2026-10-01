@@ -1,6 +1,7 @@
-"""The Instax Collage tool: pick an instax format and a preset grid layout, fill
-each cell with a photo, and export the collage — as a bare image for an instax
-printer, or with the white instax border drawn on."""
+"""The Instax Collage tool: pick an instax format, a preset layout, and a gutter
+size, fill each cell with a photo, and export the collage — as a bare image for
+an instax printer (the film supplies the border), or wrapped in a white instax
+card for a normal printer."""
 from __future__ import annotations
 
 import cv2
@@ -28,10 +29,12 @@ _COMBO = (
     "QComboBox { background-color: #2a2a2a; color: #ddd; border: 1px solid #444; "
     "padding: 3px 8px; border-radius: 3px; font-size: 12px; }"
 )
+_MAX_GRID_LINES = 10   # for clearing old row/column stretches on rebuild
 
 
 class CollagePage(QWidget):
-    """Format + layout pickers over a rows×cols grid of crop stations."""
+    """Format + layout + gutter pickers over a grid of crop stations that
+    mirrors the chosen layout."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -40,9 +43,10 @@ class CollagePage(QWidget):
         root.setSpacing(8)
 
         intro = QLabel(
-            "Build a collage sized for an instax print. Pick a format and a "
-            "layout, load a photo into each cell, then export — as a plain image "
-            "for an instax printer, or with the white instax border."
+            "Build a collage sized for an instax print. Pick a format, a layout, "
+            "and the gutter between photos, load a photo into each cell, then "
+            "export — a plain image for an instax printer (the film adds the white "
+            "border), or wrapped in a border for a normal printer."
         )
         intro.setStyleSheet("color: #aaa; font-size: 12px;")
         intro.setWordWrap(True)
@@ -56,16 +60,22 @@ class CollagePage(QWidget):
         self._fmt.setStyleSheet(_COMBO)
         for f in cfg.INSTAX_FORMATS:
             self._fmt.addItem(f.label, f.key)
-        self._fmt.currentIndexChanged.connect(self._rebuild_cells)
         controls.addWidget(self._fmt)
 
         controls.addWidget(self._tag("Layout"))
         self._layout = QComboBox()
         self._layout.setStyleSheet(_COMBO)
-        for name, rows, cols in cfg.COLLAGE_LAYOUTS:
-            self._layout.addItem(name, (rows, cols))
-        self._layout.currentIndexChanged.connect(self._rebuild_cells)
+        for name, template in cfg.COLLAGE_LAYOUTS:
+            self._layout.addItem(name, template)
         controls.addWidget(self._layout)
+
+        controls.addWidget(self._tag("Gutter"))
+        self._gap = QComboBox()
+        self._gap.setStyleSheet(_COMBO)
+        for name, mm in cfg.COLLAGE_GAP_CHOICES:
+            self._gap.addItem(name, mm)
+        self._gap.setCurrentIndex(1)   # "Thin" default
+        controls.addWidget(self._gap)
 
         controls.addStretch()
         self._new = QPushButton("New collage")
@@ -74,11 +84,16 @@ class CollagePage(QWidget):
         controls.addWidget(self._new)
         root.addLayout(controls)
 
-        # Cell grid
+        # Connect after populating so no premature rebuild fires
+        self._fmt.currentIndexChanged.connect(self._rebuild_cells)
+        self._layout.currentIndexChanged.connect(self._rebuild_cells)
+        self._gap.currentIndexChanged.connect(self._rebuild_cells)
+
+        # Cell grid (mirrors the layout)
         self._grid_host = QWidget()
         self._grid = QGridLayout(self._grid_host)
         self._grid.setContentsMargins(0, 0, 0, 0)
-        self._grid.setSpacing(8)
+        self._grid.setSpacing(6)
         root.addWidget(self._grid_host, stretch=1)
 
         # Bottom bar
@@ -105,25 +120,41 @@ class CollagePage(QWidget):
     # -- layout management --
     def _current(self):
         fmt = cfg.format_by_key(self._fmt.currentData())
-        rows, cols = self._layout.currentData()
-        return fmt, rows, cols
+        template = self._layout.currentData()
+        gap_mm = self._gap.currentData()
+        return fmt, template, gap_mm
 
     def _rebuild_cells(self) -> None:
-        # Tear down the old grid of stations.
         for slot in self._slots:
             self._grid.removeWidget(slot)
             slot.deleteLater()
         self._slots = []
+        for i in range(_MAX_GRID_LINES):     # clear stale spans/stretches
+            self._grid.setColumnStretch(i, 0)
+            self._grid.setRowStretch(i, 0)
 
-        fmt, rows, cols = self._current()
-        out_w, out_h, phys_w_mm = collage.cell_output_size(fmt, rows, cols)
-        for r in range(rows):
-            for c in range(cols):
-                idx = r * cols + c
-                slot = CropSlot(idx, self._update_state, out_w, out_h, phys_w_mm,
-                                label=f"Load #{idx + 1}")
-                self._grid.addWidget(slot, r, c)
-                self._slots.append(slot)
+        fmt, template, gap_mm = self._current()
+        sizes = collage.cell_output_sizes(fmt, template, gap_mm)
+
+        # Map the layout's cut lines to grid rows/columns so the stations mirror
+        # the actual collage arrangement (spans + proportional stretch).
+        xs = sorted({round(c[0], 4) for c in template} | {round(c[0] + c[2], 4) for c in template})
+        ys = sorted({round(c[1], 4) for c in template} | {round(c[1] + c[3], 4) for c in template})
+        col_of = {v: i for i, v in enumerate(xs)}
+        row_of = {v: i for i, v in enumerate(ys)}
+
+        for i, ((nx, ny, nw, nh), (w, h, phys)) in enumerate(zip(template, sizes)):
+            slot = CropSlot(i, self._update_state, w, h, phys, label=f"Load #{i + 1}")
+            r0, r1 = row_of[round(ny, 4)], row_of[round(ny + nh, 4)]
+            c0, c1 = col_of[round(nx, 4)], col_of[round(nx + nw, 4)]
+            self._grid.addWidget(slot, r0, c0, r1 - r0, c1 - c0)
+            self._slots.append(slot)
+
+        for i in range(len(xs) - 1):
+            self._grid.setColumnStretch(i, max(1, round((xs[i + 1] - xs[i]) * 1000)))
+        for i in range(len(ys) - 1):
+            self._grid.setRowStretch(i, max(1, round((ys[i + 1] - ys[i]) * 1000)))
+
         self._update_state()
 
     def _on_new(self) -> None:
@@ -165,20 +196,21 @@ class CollagePage(QWidget):
         if any(c is None for c in crops):
             QMessageBox.warning(self, "Not ready", "Every cell must have a photo first.")
             return
-        fmt, rows, cols = self._current()
-        CollagePreviewDialog(fmt, rows, cols, crops, self).exec()
+        fmt, template, gap_mm = self._current()
+        CollagePreviewDialog(fmt, template, crops, gap_mm, self).exec()
 
 
 class CollagePreviewDialog(QDialog):
-    """Preview the collage with a border toggle, then Save / Print."""
+    """Preview the collage with an optional instax border, then Save / Print."""
 
-    def __init__(self, fmt, rows, cols, crops, parent=None):
+    def __init__(self, fmt, template, crops, gap_mm, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{fmt.label} collage preview")
         self.setStyleSheet("background-color: #111; color: #ddd;")
         self._fmt = fmt
-        self._rows, self._cols = rows, cols
+        self._template = template
         self._crops = crops
+        self._gap_mm = gap_mm
         self._bgr = None
 
         layout = QVBoxLayout(self)
@@ -187,7 +219,10 @@ class CollagePreviewDialog(QDialog):
         self._img_lbl.setMinimumSize(360, 360)
         layout.addWidget(self._img_lbl)
 
-        self._border = QCheckBox("Add white instax border  (off = image only, for an instax printer)")
+        self._border = QCheckBox(
+            "Add white instax border — for a normal printer "
+            "(an instax printer adds its own, so leave this off for instax)"
+        )
         self._border.setStyleSheet("color: #ccc; font-size: 12px;")
         self._border.toggled.connect(self._render)
         layout.addWidget(self._border)
@@ -211,7 +246,7 @@ class CollagePreviewDialog(QDialog):
 
     def _render(self) -> None:
         self._bgr = collage.build_collage(
-            self._fmt, self._rows, self._cols, self._crops, self._border.isChecked()
+            self._fmt, self._template, self._crops, self._border.isChecked(), self._gap_mm
         )
         rgb = cv2.cvtColor(self._bgr, cv2.COLOR_BGR2RGB)
         h, w = rgb.shape[:2]
