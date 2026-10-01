@@ -13,6 +13,20 @@ fit on one cheap standard 4R print.
 
 ---
 
+## Two Tools (the menu)
+
+The app has two tools, chosen from the **Tools** menu in the menu bar:
+
+- **4R Print Sheet (3 instax mini)** — the default; the sheet workflow described
+  below. Three instax-mini cards on one 15×10 cm lab print.
+- **Instax Collage** — combine several photos into **one** instax-sized image
+  (Mini, Square, or Wide) and export it to print on an **instax printer**, with
+  or without the white border. See [Instax Collage](#instax-collage) below.
+
+**File → Quit** (Ctrl+Q) closes the app.
+
+---
+
 ## The Workflow at a Glance
 
 1. **Load** three photos — one per crop slot.
@@ -183,6 +197,50 @@ Two ways to start over:
    under the cards.
 
 That's it — three cuts total, and you have three instax-mini-style prints.
+
+---
+
+## Instax Collage
+
+Switch to **Tools → Instax Collage** to combine several photos into a single
+instax-sized image — the kind you send to an **instax printer** (Mini Link,
+SP-2/3, Link Wide, etc.).
+
+### 1 — Pick a format and layout
+
+At the top of the tool:
+
+- **Format** — the instax size you'll print on:
+  - **Instax Mini** — 46×62 mm image (portrait)
+  - **Instax Square** — 62×62 mm image
+  - **Instax Wide** — 99×62 mm image (landscape)
+- **Layout** — a preset grid that fills the frame: **1 photo**, **2 stacked**,
+  **2 side by side**, **3 rows**, **3 columns**, or **4 — grid (2×2)**.
+
+Changing either one rebuilds the cells below.
+
+### 2 — Fill each cell
+
+Each cell is a crop station exactly like the sheet tool: **Load** a photo, then
+**drag / wheel-zoom / rotate** to frame it. The frame is locked to that cell's
+shape, and each cell shows its own effective-DPI readout (red below 180). A thin
+white gutter separates the cells.
+
+### 3 — Export (image or with border)
+
+Click **Export collage…** once every cell is filled. The preview has a checkbox:
+
+- **Unchecked (default): image only.** The output is exactly the instax
+  printer's native image resolution (e.g. 600×800 for Mini, 800×800 for Square,
+  1260×840 for Wide). Send this to an instax printer — the film cartridge
+  provides the physical white border.
+- **Checked: add the white instax border.** The collage is drawn inside a full
+  instax card (thin top/side borders, thick bottom), for printing on a normal
+  printer or just to preview how the finished print will look.
+
+**Save…** writes a JPEG/PNG/TIFF with the instax print DPI embedded (using the
+last-used folder and the same incremental naming as the sheet tool), and
+**Print…** sends it to a printer. **New collage** clears every cell to start over.
 
 ---
 

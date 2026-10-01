@@ -1,6 +1,9 @@
-"""Interactive instax-ratio crop: the whole source is shown with an instax-shaped
-frame the user can drag, zoom (mouse wheel) and rotate. The frame is always kept
-inside the image so the crop can never contain blank edges."""
+"""Interactive crop widget: the whole source is shown with a frame the user can
+drag, zoom (mouse wheel) and rotate. The frame is always kept inside the image so
+the crop can never contain blank edges.
+
+The output rectangle is parameterised (``out_w`` × ``out_h``), so the same widget
+drives both the instax-mini sheet crop and arbitrary-aspect collage cells."""
 from __future__ import annotations
 
 import cv2
@@ -12,18 +15,23 @@ from PyQt6.QtWidgets import QWidget
 import imaging
 import instax_config as cfg
 
-_OUT_W, _OUT_H = cfg.INSTAX_W, cfg.INSTAX_H
+_DEF_OUT_W, _DEF_OUT_H = cfg.INSTAX_W, cfg.INSTAX_H
 _MAX_ZOOM = 8.0   # frame may shrink to 1/8 of the "fills the image" size
 
 
 class CropCanvas(QWidget):
     changed = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, out_w: int = _DEF_OUT_W, out_h: int = _DEF_OUT_H,
+                 phys_w_mm: float = cfg.INSTAX_W_MM, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(300, 380)
+        self.setMinimumSize(150, 150)
         self.setMouseTracking(True)
         self.setStyleSheet("background-color: #161616;")
+
+        self._out_w = out_w
+        self._out_h = out_h
+        self._phys_w_mm = phys_w_mm   # physical width of the output, for the DPI hint
 
         self._img: np.ndarray | None = None
         self._pix: QPixmap | None = None
@@ -43,6 +51,16 @@ class CropCanvas(QWidget):
 
     def is_ready(self) -> bool:
         return self._img is not None
+
+    def set_output_size(self, out_w: int, out_h: int, phys_w_mm: float | None = None) -> None:
+        """Change the crop's aspect ratio / target size (e.g. for a new collage
+        layout). Keeps the loaded image but re-clamps the frame to stay valid."""
+        self._out_w = out_w
+        self._out_h = out_h
+        if phys_w_mm is not None:
+            self._phys_w_mm = phys_w_mm
+        if self._img is not None:
+            self._apply()
 
     def set_image(self, path) -> bool:
         img = imaging.imread(path)
@@ -86,14 +104,14 @@ class CropCanvas(QWidget):
         self._apply()
 
     def scale(self) -> float:
-        s_min = imaging.min_scale(self.angle, _OUT_W, _OUT_H, self._w, self._h)
+        s_min = imaging.min_scale(self.angle, self._out_w, self._out_h, self._w, self._h)
         return s_min * self.zoom
 
     def get_output(self) -> np.ndarray | None:
         if self._img is None:
             return None
         return imaging.render_crop(
-            self._img, self.angle, self.scale(), self.cx, self.cy, _OUT_W, _OUT_H
+            self._img, self.angle, self.scale(), self.cx, self.cy, self._out_w, self._out_h
         )
 
     def source_dpi(self) -> float:
@@ -101,9 +119,10 @@ class CropCanvas(QWidget):
         the print will look soft."""
         if self._img is None:
             return 0.0
-        # Output width _OUT_W spans INSTAX_W_MM; the source contributes _OUT_W/scale px.
-        src_px = _OUT_W / self.scale()
-        inches = cfg.INSTAX_W_MM / 25.4
+        # Output width self._out_w spans self._phys_w_mm; source contributes
+        # self._out_w / scale px across that width.
+        src_px = self._out_w / self.scale()
+        inches = self._phys_w_mm / 25.4
         return src_px / inches
 
     # ------------------------------------------------------------------
@@ -114,7 +133,8 @@ class CropCanvas(QWidget):
         if self._img is None:
             return
         self.cx, self.cy = imaging.clamp_center(
-            self.cx, self.cy, self.angle, self.scale(), _OUT_W, _OUT_H, self._w, self._h
+            self.cx, self.cy, self.angle, self.scale(),
+            self._out_w, self._out_h, self._w, self._h
         )
         self.update()
         self.changed.emit()
@@ -156,8 +176,9 @@ class CropCanvas(QWidget):
             int(round(dw)), int(round(dh)), self._pix
         )
 
-        # Instax frame as a polygon in view space
-        quad = imaging.crop_quad_src(self.angle, self.scale(), self.cx, self.cy, _OUT_W, _OUT_H)
+        # Crop frame as a polygon in view space
+        quad = imaging.crop_quad_src(self.angle, self.scale(), self.cx, self.cy,
+                                     self._out_w, self._out_h)
         poly = QPolygonF([self._src_to_view(p) for p in quad])
 
         # Dim everything outside the frame

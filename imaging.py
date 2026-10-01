@@ -13,9 +13,24 @@ the crop never includes blank borders.
 from __future__ import annotations
 
 import math
+import os
 
 import cv2
 import numpy as np
+
+
+def next_available_path(directory: str, base: str, ext: str) -> str:
+    """A path in `directory` for `base+ext` that doesn't exist yet, appending
+    _1, _2, … so successive saves never overwrite a previous file."""
+    candidate = os.path.join(directory, f"{base}{ext}")
+    if not os.path.exists(candidate):
+        return candidate
+    i = 1
+    while True:
+        candidate = os.path.join(directory, f"{base}_{i}{ext}")
+        if not os.path.exists(candidate):
+            return candidate
+        i += 1
 
 
 # ----------------------------------------------------------------------

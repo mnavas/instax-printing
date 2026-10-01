@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.0.6
+
+- **Main menu** added. A **Tools** menu switches between the two tools; **File →
+  Quit** closes the app.
+- **Instax Collage** tool (new). Pick an instax **format** — Mini (46×62 mm),
+  Square (62×62 mm), or Wide (99×62 mm) — and a preset **grid layout** (1, 2, 3,
+  or 2×2), then fill each cell with a pan/zoom/rotate crop.
+  - **Export as a plain image** sized to the instax printer's native resolution
+    (the printer adds the physical border), **or with the white instax border**
+    drawn on — toggled in the preview.
+  - Saves with the instax print DPI embedded, reusing the last-used folder and
+    incremental naming.
+- Internals: `CropCanvas` is now output-size agnostic (any aspect ratio), and the
+  crop station, save/print, and styles are shared between both tools.
+
 ## v0.0.5
 
 - **New sheet** button clears all three photos to start over (with a

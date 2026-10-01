@@ -1,200 +1,39 @@
-"""instax-printing — arrange three instax-mini crops onto a print-ready 4R sheet."""
+"""instax-printing — main window with a menu to switch between the 4R print
+sheet tool and the instax collage tool."""
 from __future__ import annotations
-
-import os
 
 import cv2
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
+from PyQt6.QtGui import QActionGroup, QImage, QPixmap
 from PyQt6.QtWidgets import (
     QDialog,
-    QFileDialog,
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QSlider,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 import composite
-import imaging
 import instax_config as cfg
-from crop_canvas import CropCanvas
+import ui_common
+from collage_page import CollagePage
+from crop_station import CropSlot
 
-_BTN = (
-    "QPushButton { background-color: #333; color: #ddd; border: 1px solid #555; "
-    "padding: 5px 12px; border-radius: 4px; font-size: 12px; }"
-    "QPushButton:hover { background-color: #444; }"
-    "QPushButton:disabled { color: #666; border-color: #333; }"
+_MENU_STYLE = (
+    "QMenuBar { background-color: #1a1a1a; color: #ddd; }"
+    "QMenuBar::item:selected { background-color: #333; }"
+    "QMenu { background-color: #1e1e1e; color: #ddd; border: 1px solid #444; }"
+    "QMenu::item:selected { background-color: #333; }"
+    "QMenu::item:checked { color: #a8e0a8; }"
 )
-_MINI = (
-    "QPushButton { background-color: #2a2a2a; color: #bbb; border: 1px solid #444; "
-    "padding: 3px 8px; border-radius: 3px; font-size: 12px; }"
-    "QPushButton:hover { background-color: #383838; }"
-)
-_ACCENT = (
-    "QPushButton { background-color: #1e4a1e; color: #a8e0a8; border: 1px solid #3a7a3a; "
-    "padding: 7px 18px; border-radius: 4px; font-size: 13px; font-weight: bold; }"
-    "QPushButton:hover { background-color: #2a6a2a; }"
-    "QPushButton:disabled { background-color: #262626; color: #666; border-color: #333; }"
-)
-
-
-class CropSlot(QWidget):
-    """One of the three crop stations: image + load/rotate/reset + zoom/angle sliders."""
-
-    _last_dir = ""   # remembered across all three slots
-
-    def __init__(self, index: int, on_change, parent=None):
-        super().__init__(parent)
-        self._on_change = on_change
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
-
-        self.canvas = CropCanvas()
-        self.canvas.changed.connect(self._sync_from_canvas)
-        layout.addWidget(self.canvas, stretch=1)
-
-        # Load / rotate / reset row
-        row = QHBoxLayout()
-        row.setSpacing(4)
-        load = QPushButton(f"Load #{index + 1}")
-        load.setStyleSheet(_MINI)
-        load.clicked.connect(self._on_load)
-        rot_l = QPushButton("⟲ 90")
-        rot_l.setStyleSheet(_MINI)
-        rot_l.clicked.connect(lambda: self._rotate(-90))
-        rot_r = QPushButton("⟳ 90")
-        rot_r.setStyleSheet(_MINI)
-        rot_r.clicked.connect(lambda: self._rotate(90))
-        reset = QPushButton("Reset")
-        reset.setStyleSheet(_MINI)
-        reset.clicked.connect(self._reset)
-        for w in (load, rot_l, rot_r, reset):
-            row.addWidget(w)
-        layout.addLayout(row)
-
-        # Zoom slider
-        zrow = QHBoxLayout()
-        zrow.addWidget(self._tag("Zoom"))
-        self._zoom = QSlider(Qt.Orientation.Horizontal)
-        self._zoom.setRange(100, 800)   # 1.00× … 8.00×
-        self._zoom.setValue(100)
-        self._zoom.valueChanged.connect(self._on_zoom_slider)
-        zrow.addWidget(self._zoom)
-        layout.addLayout(zrow)
-
-        # Angle slider
-        arow = QHBoxLayout()
-        arow.addWidget(self._tag("Angle"))
-        self._angle = QSlider(Qt.Orientation.Horizontal)
-        self._angle.setRange(-180, 180)
-        self._angle.setValue(0)
-        self._angle.valueChanged.connect(self._on_angle_slider)
-        arow.addWidget(self._angle)
-        layout.addLayout(arow)
-
-        self._dpi_lbl = QLabel("")
-        self._dpi_lbl.setStyleSheet("color: #888; font-size: 11px;")
-        self._dpi_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self._dpi_lbl)
-
-    @staticmethod
-    def _tag(text: str) -> QLabel:
-        lbl = QLabel(text)
-        lbl.setStyleSheet("color: #999; font-size: 11px;")
-        lbl.setFixedWidth(40)
-        return lbl
-
-    # -- actions --
-    # Extensions we can decode; both cases are listed because the native (OS)
-    # file dialog matches glob patterns case-sensitively, so plain "*.jpg" would
-    # hide ".JPG" photos and make the folder look empty.
-    _IMG_EXTS = ("jpg", "jpeg", "jpe", "jfif", "png", "tif", "tiff", "bmp", "webp")
-
-    def _on_load(self) -> None:
-        start = self._last_dir or os.path.expanduser("~")
-        patterns = " ".join(f"*.{e} *.{e.upper()}" for e in self._IMG_EXTS)
-        # Native OS dialog (matches the system theme); the case-inclusive filter
-        # above ensures images actually show.
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Choose an image", start,
-            f"Images ({patterns});;All files (*)",
-        )
-        if not path:
-            return
-        CropSlot._last_dir = os.path.dirname(path)
-        if not self.canvas.set_image(path):
-            QMessageBox.warning(self, "Load failed", "Could not read that image.")
-            return
-        self._sync_from_canvas()
-        self._on_change()
-
-    def _rotate(self, delta: int) -> None:
-        self.canvas.rotate_by(delta)
-
-    def _reset(self) -> None:
-        if self.canvas.is_ready():
-            self.canvas.reset_view()
-
-    def _on_zoom_slider(self, value: int) -> None:
-        self.canvas.set_zoom(value / 100.0)
-
-    def _on_angle_slider(self, value: int) -> None:
-        self.canvas.set_angle(float(value))
-
-    def _sync_from_canvas(self) -> None:
-        """Reflect wheel/drag changes back into the sliders and DPI hint."""
-        for slider, val in ((self._zoom, round(self.canvas.zoom * 100)),
-                            (self._angle, round(self.canvas.angle))):
-            slider.blockSignals(True)
-            slider.setValue(int(val))
-            slider.blockSignals(False)
-        if self.canvas.is_ready():
-            dpi = self.canvas.source_dpi()
-            warn = "  ⚠ low-res" if dpi < 180 else ""
-            self._dpi_lbl.setText(f"≈ {dpi:.0f} DPI{warn}")
-            self._dpi_lbl.setStyleSheet(
-                "color: #ff8080; font-size: 11px;" if dpi < 180
-                else "color: #888; font-size: 11px;"
-            )
-        self._on_change()
-
-    def clear(self) -> None:
-        """Unload this slot's photo and reset its controls."""
-        self.canvas.clear()   # emits changed → sliders reset via _sync_from_canvas
-        self._dpi_lbl.setText("")
-
-    def is_ready(self) -> bool:
-        return self.canvas.is_ready()
-
-    def get_output(self):
-        return self.canvas.get_output()
-
-
-def _next_available_path(directory: str, base: str, ext: str) -> str:
-    """A path in `directory` for `base+ext` that doesn't exist yet, appending
-    _1, _2, … so successive saves never overwrite a previous sheet."""
-    candidate = os.path.join(directory, f"{base}{ext}")
-    if not os.path.exists(candidate):
-        return candidate
-    i = 1
-    while True:
-        candidate = os.path.join(directory, f"{base}_{i}{ext}")
-        if not os.path.exists(candidate):
-            return candidate
-        i += 1
 
 
 class PreviewDialog(QDialog):
     """Shows the composed 4R sheet with Save / Print."""
-
-    _last_save_dir = ""   # remembered across the session
 
     def __init__(self, canvas_bgr, parent=None):
         super().__init__(parent)
@@ -217,65 +56,31 @@ class PreviewDialog(QDialog):
         row = QHBoxLayout()
         row.addStretch()
         save = QPushButton("Save…")
-        save.setStyleSheet(_ACCENT)
+        save.setStyleSheet(ui_common.STYLE_ACCENT)
         save.clicked.connect(self._save)
         printb = QPushButton("Print…")
-        printb.setStyleSheet(_BTN)
+        printb.setStyleSheet(ui_common.STYLE_BTN)
         printb.clicked.connect(self._print)
         close = QPushButton("Close")
-        close.setStyleSheet(_BTN)
+        close.setStyleSheet(ui_common.STYLE_BTN)
         close.clicked.connect(self.reject)
         for w in (save, printb, close):
             row.addWidget(w)
         layout.addLayout(row)
 
     def _save(self) -> None:
-        # Start in the folder used last (this session), and suggest the next
-        # free instax_4r[_N] name there so we never overwrite an earlier sheet.
-        start_dir = PreviewDialog._last_save_dir or os.path.expanduser("~")
-        default_path = _next_available_path(start_dir, "instax_4r", ".jpg")
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save 4R sheet", default_path,
-            "JPEG (*.jpg);;PNG (*.png);;TIFF (*.tif)",
-        )
-        if not path:
-            return
-        PreviewDialog._last_save_dir = os.path.dirname(path)
-        if imaging.imwrite_print(path, self._bgr, cfg.PRINT_DPI):
-            QMessageBox.information(self, "Saved", f"Saved at {cfg.PRINT_DPI} DPI:\n{path}")
-        else:
-            QMessageBox.warning(self, "Save failed", "Could not write the file.")
+        ui_common.save_image(self, self._bgr, "instax_4r", dpi=cfg.PRINT_DPI)
 
     def _print(self) -> None:
-        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-        printer.setResolution(cfg.PRINT_DPI)
-        dlg = QPrintDialog(printer, self)
-        if dlg.exec() != QDialog.DialogCode.Accepted:
-            return
-        rgb = cv2.cvtColor(self._bgr, cv2.COLOR_BGR2RGB)
-        h, w = rgb.shape[:2]
-        qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
-        from PyQt6.QtGui import QPainter
-        painter = QPainter(printer)
-        rect = painter.viewport()
-        scaled = qimg.scaled(rect.size(), Qt.AspectRatioMode.KeepAspectRatio,
-                             Qt.TransformationMode.SmoothTransformation)
-        x = (rect.width() - scaled.width()) // 2
-        y = (rect.height() - scaled.height()) // 2
-        painter.drawImage(x, y, scaled)
-        painter.end()
+        ui_common.print_image(self, self._bgr, dpi=cfg.PRINT_DPI)
 
 
-class MainWindow(QMainWindow):
+class SheetPage(QWidget):
+    """The original tool: three instax-mini crops laid onto a 4R print sheet."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("instax-printing — 3 × instax mini on a 4R sheet")
-        self.resize(1240, 860)
-        self.setStyleSheet("background-color: #111; color: #ddd;")
-
-        central = QWidget()
-        self.setCentralWidget(central)
-        root = QVBoxLayout(central)
+        root = QVBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(8)
 
@@ -301,11 +106,11 @@ class MainWindow(QMainWindow):
         bottom.addWidget(self._status)
         bottom.addStretch()
         self._newsheet = QPushButton("New sheet")
-        self._newsheet.setStyleSheet(_BTN)
+        self._newsheet.setStyleSheet(ui_common.STYLE_BTN)
         self._newsheet.clicked.connect(self._on_new_sheet)
         bottom.addWidget(self._newsheet)
         self._generate = QPushButton("Generate 4R sheet")
-        self._generate.setStyleSheet(_ACCENT)
+        self._generate.setStyleSheet(ui_common.STYLE_ACCENT)
         self._generate.clicked.connect(self._on_generate)
         bottom.addWidget(self._generate)
         root.addLayout(bottom)
@@ -354,3 +159,48 @@ class MainWindow(QMainWindow):
             return
         sheet = composite.build_4r(crops)
         PreviewDialog(sheet, self).exec()
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("instax-printing")
+        self.resize(1240, 860)
+        self.setStyleSheet("background-color: #111; color: #ddd;" + _MENU_STYLE)
+
+        self._stack = QStackedWidget()
+        self._sheet_page = SheetPage()
+        self._collage_page = CollagePage()
+        self._stack.addWidget(self._sheet_page)     # index 0
+        self._stack.addWidget(self._collage_page)   # index 1
+        self.setCentralWidget(self._stack)
+
+        self._build_menu()
+
+    def _build_menu(self) -> None:
+        bar = self.menuBar()
+
+        file_menu = bar.addMenu("File")
+        quit_act = file_menu.addAction("Quit")
+        quit_act.setShortcut("Ctrl+Q")
+        quit_act.triggered.connect(self.close)
+
+        tools = bar.addMenu("Tools")
+        group = QActionGroup(self)
+        group.setExclusive(True)
+
+        self._sheet_act = tools.addAction("4R Print Sheet (3 instax mini)")
+        self._sheet_act.setCheckable(True)
+        self._sheet_act.setChecked(True)
+        self._sheet_act.triggered.connect(lambda: self._show_page(0))
+        group.addAction(self._sheet_act)
+
+        self._collage_act = tools.addAction("Instax Collage")
+        self._collage_act.setCheckable(True)
+        self._collage_act.triggered.connect(lambda: self._show_page(1))
+        group.addAction(self._collage_act)
+
+    def _show_page(self, index: int) -> None:
+        self._stack.setCurrentIndex(index)
+        title = "4R Print Sheet" if index == 0 else "Instax Collage"
+        self.setWindowTitle(f"instax-printing — {title}")

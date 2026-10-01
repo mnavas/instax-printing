@@ -19,19 +19,44 @@ without a running UI.
 ```
 instax-printing/
 ├── main.py            Entry point — boots Qt (Fusion style), shows MainWindow
-├── instax_config.py   Physical sizes (mm) → pixels @ 300 DPI, and the 3-up layout
-├── imaging.py         Unicode-safe image I/O + the crop-transform maths (no Qt)
+├── instax_config.py   Physical sizes (mm) → px, the 3-up layout, instax formats + collage layouts
+├── imaging.py         Unicode-safe image I/O, incremental naming + the crop-transform maths (no Qt)
 ├── composite.py       Assembles the 4R sheet and draws the cut marks (no Qt)
-├── crop_canvas.py     CropCanvas widget — interactive move/zoom/rotate frame
-├── main_window.py     CropSlot, PreviewDialog, MainWindow — all the UI
+├── collage.py         Assembles an instax-format collage, image-only or bordered (no Qt)
+├── crop_canvas.py     CropCanvas widget — interactive move/zoom/rotate frame (any output size)
+├── crop_station.py    CropSlot widget — a CropCanvas + load/rotate/reset + sliders + DPI hint
+├── ui_common.py       Shared button styles + save/print helpers (last-used folder, incrementing names)
+├── collage_page.py    CollagePage + CollagePreviewDialog — the collage tool UI
+├── main_window.py     SheetPage, PreviewDialog, MainWindow (menu + page stack)
 ├── run.sh             venv bootstrap + launcher
 └── requirements.txt   PyQt6, opencv-python, Pillow, numpy
 ```
 
-**Dependency direction:** `main_window` → (`crop_canvas`, `composite`, `imaging`,
-`instax_config`); `crop_canvas` → (`imaging`, `instax_config`); `composite` →
-`instax_config`; `imaging` → (nothing project-local). Nothing lower ever imports
-upward.
+**Dependency direction:** `main_window` → (`collage_page`, `crop_station`,
+`composite`, `ui_common`, `instax_config`); `collage_page` → (`collage`,
+`crop_station`, `ui_common`, `instax_config`); `crop_station` → (`crop_canvas`,
+`ui_common`, `instax_config`); `crop_canvas`/`composite`/`collage` →
+(`imaging`, `instax_config`); `ui_common` → `imaging`; `imaging` → (nothing
+project-local). Nothing lower ever imports upward.
+
+The pure-NumPy layer (`imaging`, `composite`, `collage`, `instax_config`) stays
+free of Qt; the widget layer (`crop_canvas`, `crop_station`, `collage_page`,
+`main_window`) and `ui_common` are the only Qt-aware modules.
+
+---
+
+## Two Tools, One Window
+
+`MainWindow` is a `QMainWindow` with a menu bar and a `QStackedWidget` holding two
+pages:
+
+- **`SheetPage`** (index 0) — the original 4R tool: three `CropSlot`s locked to
+  the instax-mini output size, a status line, **New sheet** / **Generate 4R
+  sheet** buttons, and `PreviewDialog` for save/print.
+- **`CollagePage`** (index 1) — the collage tool (see below).
+
+The **Tools** menu holds two checkable, mutually exclusive actions (a
+`QActionGroup`) that call `_show_page(index)`; **File → Quit** closes the window.
 
 ---
 
@@ -149,34 +174,84 @@ build_4r(crops)                     # crops: exactly three instax-ratio images
 
 ---
 
-## The UI (`main_window.py`)
+## Instax Formats & Collage (`instax_config.py` + `collage.py`)
 
-Three classes:
+### `InstaxFormat`
 
-### `CropSlot(QWidget)`
+A frozen dataclass describing one instax size in real millimetres (image area +
+full card + top/side border) plus the **native image-area pixel size of that
+format's instax printer** (`print_px_w × print_px_h`). Everything else is derived:
+
+- `dpi_x` / `dpi_y` — effective print DPI (`print_px / (img_mm / 25.4)`).
+- `side_border_mm()` — `(card_w − img_w) / 2`.
+- `borders_px()` — `(side, top, bottom)` border thickness in pixels; the bottom
+  is the remainder `card_h − img_h − top` (the classic thick instax bottom).
+- `gap_px(gap_mm)` — the white gutter width in pixels.
+
+`INSTAX_FORMATS` holds Mini (600×800), Square (800×800), and Wide (1260×840).
+`COLLAGE_LAYOUTS` holds the preset `(label, rows, cols)` grids; `COLLAGE_GAP_MM`
+and `COLLAGE_BG` set the gutter.
+
+### Building a collage
+
+```
+cell_output_size(fmt, rows, cols)   # px size + physical width of one cell
+build_collage(fmt, rows, cols, crops, with_border)
+  ├─ grid_cells(...)                 # (x, y, w, h) of each cell, gutter included
+  ├─ blit each crop into its cell    # at the printer's native resolution
+  └─ with_border?  paste the image area inside a full white instax card
+```
+
+`build_collage` returns the **bare image area** at the printer's native
+resolution (`with_border=False`) — ready to send to an instax printer, which adds
+the physical border itself — or the **full card** with the white instax border
+drawn on (`with_border=True`). It raises `ValueError` unless given exactly
+`rows*cols` crops.
+
+---
+
+## The UI (`main_window.py`, `collage_page.py`, `crop_station.py`)
+
+### `CropSlot(QWidget)` — `crop_station.py`
 
 One crop station: a `CropCanvas` plus the **Load / ⟲ 90 / ⟳ 90 / Reset** row, the
 **Zoom** and **Angle** sliders, and the DPI label. It wires the canvas's `changed`
 signal to `_sync_from_canvas`, which pushes the canvas state back into the sliders
-(with signals blocked to avoid feedback loops) and updates the DPI readout.
+(with signals blocked to avoid feedback loops) and updates the DPI readout. The
+constructor takes the crop's **output size** (and physical width for the DPI
+hint), so the same widget serves instax-mini sheet slots and arbitrary-aspect
+collage cells.
 
 `_last_dir` is a **class attribute**, so the file dialog's remembered folder is
-shared across all three slots. `_IMG_EXTS` is listed in both cases so the native
-file dialog's case-sensitive globbing doesn't hide `.JPG` photos.
+shared across every slot in both tools. `_IMG_EXTS` is listed in both cases so the
+native file dialog's case-sensitive globbing doesn't hide `.JPG` photos.
 
-### `PreviewDialog(QDialog)`
+### `SheetPage` / `PreviewDialog` — `main_window.py`
 
-Shows the composed sheet (scaled to 900 px wide for display) with **Save… / Print…
-/ Close**. Save uses `imaging.imwrite_print` at 300 DPI; Print renders through a
-`QPrinter` at `HighResolution`, scaled to fit the page and centred.
+`SheetPage` holds the three mini `CropSlot`s, the status line, and the **New
+sheet** / **Generate 4R sheet** buttons; `_on_generate` calls `composite.build_4r`
+and opens `PreviewDialog`, which shows the sheet (scaled to 900 px) with **Save… /
+Print… / Close** via the shared `ui_common` helpers.
 
-### `MainWindow(QMainWindow)`
+### `CollagePage` / `CollagePreviewDialog` — `collage_page.py`
 
-Holds the three `CropSlot`s and the **Generate 4R sheet** button.
-`_update_state()` runs on every change: it enables Generate only when all three
-slots are ready and updates the status line (loaded count, low-DPI warnings, or
-the green "all ready" message). `_on_generate()` collects the three outputs, calls
-`composite.build_4r`, and opens the `PreviewDialog`.
+`CollagePage` has the **Format** and **Layout** combo boxes over a `QGridLayout` of
+`CropSlot`s. Changing either combo calls `_rebuild_cells()`, which tears down the
+old stations and builds `rows×cols` fresh ones sized by `collage.cell_output_size`.
+`_on_export` collects the crops and opens `CollagePreviewDialog`, which has a
+**border** checkbox that re-renders between image-only and bordered via
+`collage.build_collage`, plus Save/Print (DPI = the format's print DPI).
+
+### `MainWindow(QMainWindow)` — `main_window.py`
+
+A menu bar plus a `QStackedWidget` of `SheetPage` and `CollagePage`. The **Tools**
+menu's two checkable actions switch pages; **File → Quit** closes the app.
+
+### `ui_common.py`
+
+Shared button styles and the `save_image` / `print_image` helpers. `save_image`
+keeps a module-level last-used directory and uses `imaging.next_available_path`
+for incremental names, so both tools share the behaviour.
 
 ---
 

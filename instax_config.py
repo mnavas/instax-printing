@@ -82,3 +82,77 @@ def card_positions() -> list[tuple[int, int]]:
     x0 = (CANVAS_W - block_w) // 2
     y = MARGIN_PX
     return [(x0 + i * (w + GAP_PX), y) for i in range(3)]
+
+
+# ----------------------------------------------------------------------
+# Instax formats — used by the Collage tool. Each format is defined in real
+# millimetres plus the native image-area pixel size of its instax printer, so a
+# collage exports at the right resolution to send straight to the printer.
+# ----------------------------------------------------------------------
+from dataclasses import dataclass   # noqa: E402  (grouped with its use)
+
+
+@dataclass(frozen=True)
+class InstaxFormat:
+    key: str
+    label: str
+    img_w_mm: float          # image area (the photo content)
+    img_h_mm: float
+    card_w_mm: float         # full card including the white border
+    card_h_mm: float
+    top_border_mm: float     # top/side borders are equal; bottom is the thick one
+    print_px_w: int          # instax printer image-area resolution
+    print_px_h: int
+
+    @property
+    def dpi_x(self) -> float:
+        return self.print_px_w / (self.img_w_mm / 25.4)
+
+    @property
+    def dpi_y(self) -> float:
+        return self.print_px_h / (self.img_h_mm / 25.4)
+
+    def side_border_mm(self) -> float:
+        return (self.card_w_mm - self.img_w_mm) / 2.0
+
+    def gap_px(self, gap_mm: float) -> int:
+        return round(gap_mm / 25.4 * self.dpi_x)
+
+    def borders_px(self) -> tuple[int, int, int]:
+        """(side, top, bottom) border thickness in pixels at print resolution."""
+        side = round(self.side_border_mm() / 25.4 * self.dpi_x)
+        top = round(self.top_border_mm / 25.4 * self.dpi_y)
+        bottom_mm = self.card_h_mm - self.img_h_mm - self.top_border_mm
+        bottom = round(bottom_mm / 25.4 * self.dpi_y)
+        return side, top, bottom
+
+
+# Pixel sizes are the image-area resolutions reported for Fujifilm's instax
+# printers (SP-2 / Link for mini, SQ/SP-3 for square, Link Wide for wide).
+INSTAX_FORMATS = [
+    InstaxFormat("mini",   "Instax Mini",   46.0, 62.0,  54.0, 86.0, 4.0,  600, 800),
+    InstaxFormat("square", "Instax Square", 62.0, 62.0,  72.0, 86.0, 5.0,  800, 800),
+    InstaxFormat("wide",   "Instax Wide",   99.0, 62.0, 108.0, 86.0, 4.0, 1260, 840),
+]
+
+
+def format_by_key(key: str) -> InstaxFormat:
+    for f in INSTAX_FORMATS:
+        if f.key == key:
+            return f
+    return INSTAX_FORMATS[0]
+
+
+# Preset collage layouts: (label, rows, cols). Cells fill one instax frame in
+# reading order (left→right, top→bottom).
+COLLAGE_LAYOUTS = [
+    ("1 photo",          1, 1),
+    ("2 — stacked",      2, 1),
+    ("2 — side by side", 1, 2),
+    ("3 — rows",         3, 1),
+    ("3 — columns",      1, 3),
+    ("4 — grid (2×2)",   2, 2),
+]
+
+COLLAGE_GAP_MM = 2.0            # white gutter between (and around) collage cells
+COLLAGE_BG = (255, 255, 255)   # BGR — the gutter / background colour
