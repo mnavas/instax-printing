@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.10
+
+- **Corrected the instax border dimensions.** The top border is **8 mm** (not
+  4 mm), making the bottom border **16 mm** — matching a real instax print. All
+  three formats share the same 86 mm frame / 62 mm image, so they all use 8 mm
+  top / 16 mm bottom; only the side border differs (Mini 4 mm, Square 5 mm, Wide
+  4.5 mm). Fixes the white-bordered output of every tool (4R sheet, collage with
+  border, and the A4 sheet).
+
 ## v0.0.9
 
 - **New tool: A4 Instax Sheet** (Tools → A4 Instax Sheet). Packs the **maximum

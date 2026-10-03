@@ -76,11 +76,13 @@ Everything is anchored to **real millimetres** and rasterised at
 | 4R sheet (landscape) | 152.4 × 101.6 | 1800 × 1200 | `CANVAS_W`, `CANVAS_H` |
 | instax card | 54 × 86 | 638 × 1016 | `CARD_W`, `CARD_H` |
 | instax image area | 46 × 62 | 543 × 732 | `INSTAX_W`, `INSTAX_H` |
-| top/side border | 4 | ~47 | `TOP_BORDER_PX` |
+| side border | 4 | ~47 | — |
+| top border | 8 | ~94 | `TOP_BORDER_PX` |
 
 `mm_to_px(mm)` is the single conversion used everywhere. The image area sits
-inside the card centred horizontally, with a 4 mm top/side border; the bottom
-border is whatever's left (~20 mm) — the classic instax look.
+inside the card centred horizontally, with 4 mm side borders and an 8 mm top
+border; the bottom border is whatever's left (**16 mm**) — the classic instax
+look (image offset toward the top, thicker bottom).
 
 ### Layout functions (`instax_config.py`)
 

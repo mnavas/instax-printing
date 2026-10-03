@@ -30,15 +30,15 @@ INSTAX_H = mm_to_px(INSTAX_H_MM)   # 732
 INSTAX_RATIO = INSTAX_W / INSTAX_H  # ≈ 0.742 (w/h, portrait)
 
 # Instax mini CARD — the full 54×86 mm print with its white border. The image
-# area sits centred horizontally with a thin top border and a thick bottom
-# border (the classic instax look): 4 mm sides, 4 mm top, 20 mm bottom.
+# area sits centred horizontally, offset toward the top so the bottom border is
+# the thick one (the classic instax look): 4 mm sides, 8 mm top, 16 mm bottom.
 CARD_W_MM = 54.0
 CARD_H_MM = 86.0
 CARD_W = mm_to_px(CARD_W_MM)   # 638
 CARD_H = mm_to_px(CARD_H_MM)   # 1016
 CARD_RATIO = CARD_W / CARD_H
-TOP_BORDER_MM = 4.0
-TOP_BORDER_PX = mm_to_px(TOP_BORDER_MM)   # ~47; bottom border is the remainder (~20 mm)
+TOP_BORDER_MM = 8.0
+TOP_BORDER_PX = mm_to_px(TOP_BORDER_MM)   # ~94; bottom border is the remainder (~16 mm)
 
 # Layout: three instax cards packed edge-to-edge and flush to the top of the 4R.
 # No outer margins and no gaps, so the sheet's own trim edges are the outer
@@ -100,7 +100,7 @@ class InstaxFormat:
     img_h_mm: float
     card_w_mm: float         # full card including the white border
     card_h_mm: float
-    top_border_mm: float     # top/side borders are equal; bottom is the thick one
+    top_border_mm: float     # top border (8 mm); bottom is the remainder (thick)
     print_px_w: int          # instax printer image-area resolution
     print_px_h: int
 
@@ -130,9 +130,11 @@ class InstaxFormat:
 # Pixel sizes are the image-area resolutions reported for Fujifilm's instax
 # printers (SP-2 / Link for mini, SQ/SP-3 for square, Link Wide for wide).
 INSTAX_FORMATS = [
-    InstaxFormat("mini",   "Instax Mini",   46.0, 62.0,  54.0, 86.0, 4.0,  600, 800),
-    InstaxFormat("square", "Instax Square", 62.0, 62.0,  72.0, 86.0, 5.0,  800, 800),
-    InstaxFormat("wide",   "Instax Wide",   99.0, 62.0, 108.0, 86.0, 4.0, 1260, 840),
+    # All three share a 86 mm frame / 62 mm image → 24 mm vertical border,
+    # split 8 mm top / 16 mm bottom. Only the side border differs by width.
+    InstaxFormat("mini",   "Instax Mini",   46.0, 62.0,  54.0, 86.0, 8.0,  600, 800),
+    InstaxFormat("square", "Instax Square", 62.0, 62.0,  72.0, 86.0, 8.0,  800, 800),
+    InstaxFormat("wide",   "Instax Wide",   99.0, 62.0, 108.0, 86.0, 8.0, 1260, 840),
 ]
 
 

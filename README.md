@@ -36,8 +36,9 @@ Print it, cut along the marks, and each piece looks like a real instax mini.
 | instax mini card | 54 × 86 | 638 × 1016 |
 | instax mini image area | 46 × 62 | 543 × 732 |
 
-The image area sits inside the card with 4 mm side/top borders and a ~20 mm
-bottom border. Three 54 mm cards are wider than the 4R (152 mm), so they print a
+The image area sits inside the card with 4 mm side borders, an 8 mm top border,
+and a 16 mm bottom border (the image is offset toward the top — the classic
+instax look). Three 54 mm cards are wider than the 4R (152 mm), so they print a
 little under full size. All layout numbers live in
 [`instax_config.py`](instax_config.py) and are easy to tweak.
 
