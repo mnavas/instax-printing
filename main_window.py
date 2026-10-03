@@ -20,17 +20,22 @@ from PyQt6.QtWidgets import (
 import composite
 import instax_config as cfg
 import ui_common
+from a4_page import A4Page
 from collage_page import CollagePage
 from crop_station import CropSlot
 
 class PreviewDialog(QDialog):
-    """Shows the composed 4R sheet with Save / Print."""
+    """Shows a composed print (4R sheet or A4 sheet) with Save / Print."""
 
-    def __init__(self, canvas_bgr, parent=None):
+    def __init__(self, canvas_bgr, parent=None,
+                 title="4R print preview — 15×10 cm",
+                 base_name="instax_4r", dpi=cfg.PRINT_DPI):
         super().__init__(parent)
-        self.setWindowTitle("4R print preview — 15×10 cm")
+        self.setWindowTitle(title)
         self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
         self._bgr = canvas_bgr
+        self._base_name = base_name
+        self._dpi = dpi
 
         layout = QVBoxLayout(self)
         rgb = cv2.cvtColor(canvas_bgr, cv2.COLOR_BGR2RGB)
@@ -60,10 +65,10 @@ class PreviewDialog(QDialog):
         layout.addLayout(row)
 
     def _save(self) -> None:
-        ui_common.save_image(self, self._bgr, "instax_4r", dpi=cfg.PRINT_DPI)
+        ui_common.save_image(self, self._bgr, self._base_name, dpi=self._dpi)
 
     def _print(self) -> None:
-        ui_common.print_image(self, self._bgr, dpi=cfg.PRINT_DPI)
+        ui_common.print_image(self, self._bgr, dpi=self._dpi)
 
 
 class SheetPage(QWidget):
@@ -162,8 +167,14 @@ class MainWindow(QMainWindow):
         self._stack = QStackedWidget()
         self._sheet_page = SheetPage()
         self._collage_page = CollagePage()
+        self._a4_page = A4Page(
+            lambda bgr, parent: PreviewDialog(
+                bgr, parent, title="A4 instax sheet — 297×210 mm",
+                base_name="instax_a4", dpi=cfg.PRINT_DPI)
+        )
         self._stack.addWidget(self._sheet_page)     # index 0
         self._stack.addWidget(self._collage_page)   # index 1
+        self._stack.addWidget(self._a4_page)        # index 2
         self.setCentralWidget(self._stack)
 
         self._build_menu()
@@ -191,7 +202,12 @@ class MainWindow(QMainWindow):
         self._collage_act.triggered.connect(lambda: self._show_page(1))
         group.addAction(self._collage_act)
 
+        self._a4_act = tools.addAction("A4 Instax Sheet")
+        self._a4_act.setCheckable(True)
+        self._a4_act.triggered.connect(lambda: self._show_page(2))
+        group.addAction(self._a4_act)
+
     def _show_page(self, index: int) -> None:
         self._stack.setCurrentIndex(index)
-        title = "4R Print Sheet" if index == 0 else "Instax Collage"
+        title = {0: "4R Print Sheet", 1: "Instax Collage", 2: "A4 Instax Sheet"}[index]
         self.setWindowTitle(f"instax-printing — {title}")

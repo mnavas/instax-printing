@@ -1,12 +1,15 @@
 # instax-printing
 
-Two tools for instax prints, chosen from the **Tools** menu:
+Three tools for instax prints, chosen from the **Tools** menu:
 
 1. **4R Print Sheet** — arrange **three instax-mini photos** onto a single **4R
    (15×10 cm) print sheet**, ready to send to a photo lab and cut apart.
 2. **Instax Collage** — combine several photos into **one** instax-sized image
    (Mini, Square, or Wide) and export it — as a plain image for an **instax
    printer**, or with the white instax border drawn on.
+3. **A4 Instax Sheet** — pack the **maximum instax cards onto a landscape A4**
+   (10 Mini / 8 Square / 4 Wide), true-size with white borders and cut lines,
+   centred for **home printing** — print it and cut them out.
 
 ## What it does (4R Print Sheet)
 
@@ -56,6 +59,21 @@ image. Pick a **format** (Mini 46×62 mm, Square 62×62 mm, or Wide 99×62 mm), 
 Instax formats, layouts, and gutter sizes all live in
 [`instax_config.py`](instax_config.py).
 
+## A4 Instax Sheet
+
+**Tools → A4 Instax Sheet** packs the most instax cards that fit on a **landscape
+A4** for home printing — **10** Mini (5×2), **8** Square (4×2), or **4** Wide
+(2×2). Load a photo into as many cards as you like (you don't have to fill them
+all), then **Generate A4 sheet**:
+
+- **True-size** instax cards at 300 DPI with the **full white border** (not
+  reduced), each outlined with a **light-grey cut line**.
+- The card block is **centred and kept a few mm inside the A4**, so it prints
+  centred without the printer clipping the edges.
+
+Save a 300-DPI A4 image (print it at 100% / fit-to-page) or Print directly, then
+cut along the lines. Page geometry lives in [`a4_sheet.py`](a4_sheet.py).
+
 ## Run
 
 ```bash
@@ -77,11 +95,13 @@ python main.py
 - `imaging.py` — image I/O (unicode-safe, DPI-aware save), incremental naming, and the crop-transform maths.
 - `composite.py` — assembles the 4R sheet and draws the cut marks.
 - `collage.py` — assembles an instax-format collage (image-only or bordered).
+- `a4_sheet.py` — packs the max instax cards onto a landscape A4 with cut lines.
 - `crop_canvas.py` — the interactive move/zoom/rotate crop widget (any output size).
 - `crop_station.py` — a crop station (canvas + load/rotate/reset + sliders + DPI hint), shared by both tools.
 - `ui_common.py` — shared button styles and save/print helpers.
 - `collage_page.py` — the Instax Collage tool UI and its export preview.
-- `main_window.py` — the sheet tool, the menu, and the two-tool page stack.
+- `a4_page.py` — the A4 Instax Sheet tool UI.
+- `main_window.py` — the sheet tool, the menu, and the three-tool page stack.
 - `main.py` — entry point.
 
 ## Documentation

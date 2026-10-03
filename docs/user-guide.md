@@ -15,13 +15,16 @@ fit on one cheap standard 4R print.
 
 ## Two Tools (the menu)
 
-The app has two tools, chosen from the **Tools** menu in the menu bar:
+The app has three tools, chosen from the **Tools** menu in the menu bar:
 
 - **4R Print Sheet (3 instax mini)** — the default; the sheet workflow described
   below. Three instax-mini cards on one 15×10 cm lab print.
 - **Instax Collage** — combine several photos into **one** instax-sized image
   (Mini, Square, or Wide) and export it to print on an **instax printer**, with
   or without the white border. See [Instax Collage](#instax-collage) below.
+- **A4 Instax Sheet** — pack the most instax cards that fit on a landscape A4
+  (10 Mini / 8 Square / 4 Wide), true-size with cut lines, for **home printing**.
+  See [A4 Instax Sheet](#a4-instax-sheet) below.
 
 **File → Quit** (Ctrl+Q) closes the app.
 
@@ -255,6 +258,47 @@ last-used folder and the same incremental naming as the sheet tool), and
 > Changing the Format, Layout, or Gutter **keeps your loaded photos** — only cells
 > that a smaller layout removes are dropped — so you can tweak freely without
 > starting over.
+
+---
+
+## A4 Instax Sheet
+
+Switch to **Tools → A4 Instax Sheet** to print the **most instax cards that fit on
+a landscape A4** at home, then cut them out.
+
+### 1 — Pick a format
+
+- **Format** — Mini, Square, or Wide. The label shows how many fit per A4:
+  - **Instax Mini** — **10** (5×2)
+  - **Instax Square** — **8** (4×2)
+  - **Instax Wide** — **4** (2×2)
+
+The grid below shows one crop station per card.
+
+### 2 — Fill the cards you want
+
+Load a photo into as many cards as you like — **you don't have to fill them all**.
+Each cell is the usual crop station (Load / ⟲ / ⟳ / Reset, Zoom + Angle, DPI
+readout). Switching format keeps the photos you've already loaded (up to the new
+capacity).
+
+### 3 — Generate, save, print, cut
+
+Click **Generate A4 sheet** (enabled once at least one card is loaded). The preview
+shows a print-ready **A4 landscape** page:
+
+- Each card is a **true-size** instax (300 DPI) with the **full white border**
+  (thin top/sides, thick bottom) — nothing is shrunk.
+- A **light-grey cut line** outlines every card; cards sit edge-to-edge, so one
+  straight cut separates two.
+- The block is **centred with a margin**, so it prints centred on A4 without the
+  printer clipping the edges.
+
+**Save…** writes a 300-DPI A4 image (print it at **100% / actual size** for exact
+instax dimensions, or fit-to-page), **Print…** sends it to a printer, and **New
+sheet** clears everything.
+
+> **Tip:** to print several copies of the *same* photo, load it into each card.
 
 ---
 

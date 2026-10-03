@@ -23,10 +23,12 @@ instax-printing/
 ├── imaging.py         Unicode-safe image I/O, incremental naming + the crop-transform maths (no Qt)
 ├── composite.py       Assembles the 4R sheet and draws the cut marks (no Qt)
 ├── collage.py         Assembles an instax-format collage, image-only or bordered (no Qt)
+├── a4_sheet.py        Packs the max instax cards onto a landscape A4 with cut lines (no Qt)
 ├── crop_canvas.py     CropCanvas widget — interactive move/zoom/rotate frame (any output size)
 ├── crop_station.py    CropSlot widget — a CropCanvas + load/rotate/reset + sliders + DPI hint
-├── ui_common.py       Shared button styles + save/print helpers (last-used folder, incrementing names)
+├── ui_common.py       Palette + global style, button styles + save/print helpers
 ├── collage_page.py    CollagePage + CollagePreviewDialog — the collage tool UI
+├── a4_page.py         A4Page — the A4 Instax Sheet tool UI
 ├── main_window.py     SheetPage, PreviewDialog, MainWindow (menu + page stack)
 ├── run.sh             venv bootstrap + launcher
 └── requirements.txt   PyQt6, opencv-python, Pillow, numpy
@@ -45,18 +47,22 @@ free of Qt; the widget layer (`crop_canvas`, `crop_station`, `collage_page`,
 
 ---
 
-## Two Tools, One Window
+## Three Tools, One Window
 
-`MainWindow` is a `QMainWindow` with a menu bar and a `QStackedWidget` holding two
-pages:
+`MainWindow` is a `QMainWindow` with a menu bar and a `QStackedWidget` holding
+three pages:
 
 - **`SheetPage`** (index 0) — the original 4R tool: three `CropSlot`s locked to
   the instax-mini output size, a status line, **New sheet** / **Generate 4R
   sheet** buttons, and `PreviewDialog` for save/print.
 - **`CollagePage`** (index 1) — the collage tool (see below).
+- **`A4Page`** (index 2) — the A4 tool (see below).
 
-The **Tools** menu holds two checkable, mutually exclusive actions (a
+The **Tools** menu holds three checkable, mutually exclusive actions (a
 `QActionGroup`) that call `_show_page(index)`; **File → Quit** closes the window.
+`PreviewDialog` is shared by the 4R and A4 tools (its `title` / `base_name` / `dpi`
+are parameters); `A4Page` receives a small factory so it can open one without
+importing `main_window` (avoiding a cycle).
 
 ---
 
@@ -216,6 +222,36 @@ normal printer). It raises `ValueError` unless given exactly `len(template)` cro
 Both the `gap_mm` (gutter) and `with_border` are chosen in the export preview, so a
 crop can be resized into its cell at whatever gutter the user picks without
 re-framing.
+
+---
+
+## A4 Instax Sheet (`a4_sheet.py` + `a4_page.py`)
+
+Packs the most instax cards that fit on a landscape A4 for home printing, at
+**300 DPI physical size** (unlike the collage tool's printer-native pixels — a
+cut-out A4 card must be a true-size instax).
+
+```
+A4_W_MM, A4_H_MM = 297, 210;  A4_W, A4_H = mm_to_px(...)   # 3508 x 2480
+EDGE_MARGIN_MM   = 4.0                                      # block stays this far in
+
+card_px(fmt)         -> full card (w, h) px @ 300 DPI
+max_grid(fmt)        -> (cols, rows) inside A4 - 2*margin   # Mini 5x2, Square 4x2, Wide 2x2
+make_card(fmt, crop) -> white card with the crop in its image area
+build_a4(fmt, crops) -> A4 canvas, up to cols*rows cards, centred block + cut lines
+```
+
+`make_card` derives the card/image/border pixels from the format's millimetres
+(`mm_to_px`), so Mini/Square/Wide all work. `build_a4` centres a
+`cols_used × rows_used` block of edge-to-edge cards and draws a light-grey
+`cv2.rectangle` cut line around each; the saved file is exactly A4 with the content
+inset, so it prints centred at true size (fit-to-page or 100%).
+
+`A4Page` is a format picker over a `QGridLayout` of `max_count(fmt)` `CropSlot`s,
+reused across format changes (grow/shrink + re-size, so loaded photos survive).
+**Generate A4 sheet** is enabled once ≥ 1 card is loaded; `_on_generate` passes the
+filled crops to `build_a4` and opens the shared `PreviewDialog` (title / base name
+`instax_a4` / 300 DPI) via the injected factory.
 
 ---
 

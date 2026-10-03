@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.9
+
+- **New tool: A4 Instax Sheet** (Tools → A4 Instax Sheet). Packs the **maximum
+  instax cards onto a landscape A4** for home printing — **10** Mini (5×2), **8**
+  Square (4×2), or **4** Wide (2×2). Fill as many cards as you like (partial OK),
+  then generate a print-ready A4:
+  - **True-size** instax cards (300 DPI) with the full white border — not reduced.
+  - A **cut line** around each card (edge-to-edge, so one cut serves two).
+  - The block is **centred inside a small margin**, so it prints centred on A4
+    without edge-clipping.
+  - Save a 300-DPI A4 image, or Print.
+
 ## v0.0.8
 
 - **Instax-inspired visual refresh.** New light, warm palette with the signature
