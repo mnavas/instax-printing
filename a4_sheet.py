@@ -36,24 +36,26 @@ def max_count(fmt: cfg.InstaxFormat) -> int:
     return cols * rows
 
 
-def make_card(fmt: cfg.InstaxFormat, crop: np.ndarray) -> np.ndarray:
-    """One full instax card at 300 DPI: white border with the crop placed in the
-    image area (centred horizontally, thin top, thick bottom)."""
+def make_card(fmt: cfg.InstaxFormat, crop: np.ndarray, scale: int = 1) -> np.ndarray:
+    """One full instax card at `scale`× 300 DPI: white border with the crop placed
+    in the image area (centred horizontally, thin top, thick bottom)."""
     cw, ch = card_px(fmt)
-    iw, ih = cfg.mm_to_px(fmt.img_w_mm), cfg.mm_to_px(fmt.img_h_mm)
+    cw, ch = cw * scale, ch * scale
+    iw, ih = cfg.mm_to_px(fmt.img_w_mm) * scale, cfg.mm_to_px(fmt.img_h_mm) * scale
     side = (cw - iw) // 2
-    top = cfg.mm_to_px(fmt.top_border_mm)
+    top = cfg.mm_to_px(fmt.top_border_mm) * scale
     card = np.full((ch, cw, 3), 255, dtype=np.uint8)
     card[top:top + ih, side:side + iw] = cv2.resize(crop, (iw, ih), interpolation=cv2.INTER_AREA)
     return card
 
 
-def build_a4(fmt: cfg.InstaxFormat, crops: list[np.ndarray]) -> np.ndarray:
-    """Return an A4-landscape (300 DPI) white canvas with up to `max_count(fmt)`
-    instax cards packed in a centred block, each outlined with a cut line.
+def build_a4(fmt: cfg.InstaxFormat, crops: list[np.ndarray], scale: int = 1) -> np.ndarray:
+    """Return an A4-landscape (`scale`× 300 DPI) white canvas with up to
+    `max_count(fmt)` instax cards packed in a centred block, each outlined with a
+    cut line. `scale` multiplies the output resolution (2 = 600 DPI).
 
-    `crops` are instax image-area crops (one per card); extras beyond the page
-    capacity are ignored.
+    `crops` are instax image-area crops (one per card, rendered at the same
+    `scale`); extras beyond the page capacity are ignored.
     """
     cols, rows = max_grid(fmt)
     k = min(len(crops), cols * rows)
@@ -61,17 +63,19 @@ def build_a4(fmt: cfg.InstaxFormat, crops: list[np.ndarray]) -> np.ndarray:
         raise ValueError("build_a4 needs at least one crop")
 
     cw, ch = card_px(fmt)
+    cw, ch = cw * scale, ch * scale
+    w_px, h_px = A4_W * scale, A4_H * scale
     cols_used = min(k, cols)
     rows_used = math.ceil(k / cols)
     block_w, block_h = cols_used * cw, rows_used * ch
-    x0 = (A4_W - block_w) // 2
-    y0 = (A4_H - block_h) // 2
+    x0 = (w_px - block_w) // 2
+    y0 = (h_px - block_h) // 2
 
-    canvas = np.full((A4_H, A4_W, 3), 255, dtype=np.uint8)
+    canvas = np.full((h_px, w_px, 3), 255, dtype=np.uint8)
     for i, crop in enumerate(crops[:k]):
         r, c = divmod(i, cols)
         x, y = x0 + c * cw, y0 + r * ch
-        canvas[y:y + ch, x:x + cw] = make_card(fmt, crop)
+        canvas[y:y + ch, x:x + cw] = make_card(fmt, crop, scale)
         cv2.rectangle(canvas, (x, y), (x + cw - 1, y + ch - 1),
                       cfg.TRIM_LINE_COLOR, 1, cv2.LINE_AA)
     return canvas

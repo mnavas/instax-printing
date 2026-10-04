@@ -151,9 +151,16 @@ class A4Page(QWidget):
             self._status.setStyleSheet(f"color: {ui_common.OK}; font-size: 12px; font-weight: 600;")
 
     def _on_generate(self) -> None:
-        crops = [s.get_output() for s in self._slots if s.is_ready()]
-        if not crops:
+        if not any(s.is_ready() for s in self._slots):
             QMessageBox.warning(self, "Not ready", "Load at least one photo first.")
             return
-        sheet = a4_sheet.build_a4(self._current(), crops)
-        self._preview_factory(sheet, self).exec()
+        fmt = self._current()
+
+        def crops(scale=1):
+            return [s.get_output(scale) for s in self._slots if s.is_ready()]
+
+        base = a4_sheet.build_a4(fmt, crops(1))
+        self._preview_factory(
+            base, self,
+            render_fn=lambda scale: a4_sheet.build_a4(fmt, crops(scale), scale=scale),
+        ).exec()

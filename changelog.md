@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.12
+
+- **High-resolution saving (600 DPI) in every tool.** A **High resolution
+  (2× · 600 DPI)** checkbox in each preview re-renders the output at double the
+  pixels and double the DPI — sampled from the **source photos**, so the extra
+  pixels are real detail, not upscaling. Works for the 4R sheet (both border
+  styles), the instax collage (image or bordered), and the A4 sheet. Leave it off
+  for the usual 300-DPI output.
+
 ## v0.0.11
 
 - **4R sheet: choose the border in the preview.** The 4R Print Sheet now offers

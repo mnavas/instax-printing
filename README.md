@@ -27,7 +27,8 @@ Three tools for instax prints, chosen from the **Tools** menu:
    - **Thin border only** — each photo with just a thin uniform white border, so
      the images print **bigger**.
 5. **Save** the sheet as a 300-DPI JPG/PNG/TIFF (physical size embedded) or
-   **Print** it directly.
+   **Print** it directly. Tick **High resolution** in any tool's preview to save
+   at **2× · 600 DPI** — re-rendered from the source photos, so it's real detail.
 
 Print it and cut along the lines — with the instax border, each piece looks like a
 real instax mini.

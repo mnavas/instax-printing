@@ -45,16 +45,17 @@ def cell_output_sizes(fmt: cfg.InstaxFormat, template, gap_mm: float = cfg.COLLA
 
 def build_collage(fmt: cfg.InstaxFormat, template, crops: list[np.ndarray],
                   gap_mm: float = cfg.COLLAGE_GAP_MM, with_border: bool = False,
-                  bg=cfg.COLLAGE_BG) -> np.ndarray:
+                  bg=cfg.COLLAGE_BG, scale: int = 1) -> np.ndarray:
     """Assemble the collage. `crops` must hold exactly len(template) images.
-    `gap_mm` is the gutter between photos. Returns the bare image area (for an
-    instax printer, which adds the border itself), or — with ``with_border`` — the
-    image area wrapped in a full white instax card (for a normal printer)."""
+    `gap_mm` is the gutter between photos; `scale` multiplies the output
+    resolution (2 = ~2× DPI, crops rendered at the same scale). Returns the bare
+    image area (for an instax printer, which adds the border itself), or — with
+    ``with_border`` — the image area wrapped in a full white instax card."""
     if len(crops) != len(template):
         raise ValueError("build_collage expects exactly len(template) crops")
 
-    w_px, h_px = fmt.print_px_w, fmt.print_px_h
-    gap = fmt.gap_px(gap_mm)
+    w_px, h_px = fmt.print_px_w * scale, fmt.print_px_h * scale
+    gap = fmt.gap_px(gap_mm) * scale
     area = np.full((h_px, w_px, 3), bg, dtype=np.uint8)
     for (x, y, cw, ch), crop in zip(cell_rects(template, w_px, h_px, gap), crops):
         area[y:y + ch, x:x + cw] = cv2.resize(crop, (cw, ch), interpolation=cv2.INTER_AREA)
@@ -62,7 +63,7 @@ def build_collage(fmt: cfg.InstaxFormat, template, crops: list[np.ndarray],
     if not with_border:
         return area
 
-    side, top, bottom = fmt.borders_px()
+    side, top, bottom = (v * scale for v in fmt.borders_px())
     card = np.full((top + h_px + bottom, side + w_px + side, 3), 255, dtype=np.uint8)
     card[top:top + h_px, side:side + w_px] = area
     return card

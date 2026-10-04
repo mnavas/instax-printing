@@ -155,5 +155,5 @@ class CropSlot(QWidget):
     def is_ready(self) -> bool:
         return self.canvas.is_ready()
 
-    def get_output(self):
-        return self.canvas.get_output()
+    def get_output(self, scale: int = 1):
+        return self.canvas.get_output(scale)

@@ -6,6 +6,7 @@ import cv2
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QActionGroup, QImage, QPixmap
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QHBoxLayout,
@@ -30,13 +31,14 @@ class PreviewDialog(QDialog):
 
     def __init__(self, canvas_bgr, parent=None,
                  title="4R print preview — 15×10 cm",
-                 base_name="instax_4r", dpi=cfg.PRINT_DPI):
+                 base_name="instax_4r", dpi=cfg.PRINT_DPI, render_fn=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
         self._bgr = canvas_bgr
         self._base_name = base_name
         self._dpi = dpi
+        self._render_fn = render_fn   # optional (scale)->bgr for high-res output
 
         layout = QVBoxLayout(self)
         rgb = cv2.cvtColor(canvas_bgr, cv2.COLOR_BGR2RGB)
@@ -51,6 +53,9 @@ class PreviewDialog(QDialog):
         layout.addWidget(img_lbl)
 
         row = QHBoxLayout()
+        self._hires = ui_common.hires_checkbox() if render_fn else None
+        if self._hires:
+            row.addWidget(self._hires)
         row.addStretch()
         save = QPushButton("Save…")
         save.setStyleSheet(ui_common.STYLE_ACCENT)
@@ -65,21 +70,31 @@ class PreviewDialog(QDialog):
             row.addWidget(w)
         layout.addLayout(row)
 
+    def _output(self):
+        """(bgr, dpi) honouring the high-resolution toggle."""
+        if self._hires and self._hires.isChecked() and self._render_fn:
+            s = ui_common.HIRES_SCALE
+            return self._render_fn(s), self._dpi * s
+        return self._bgr, self._dpi
+
     def _save(self) -> None:
-        ui_common.save_image(self, self._bgr, self._base_name, dpi=self._dpi)
+        bgr, dpi = self._output()
+        ui_common.save_image(self, bgr, self._base_name, dpi=dpi)
 
     def _print(self) -> None:
-        ui_common.print_image(self, self._bgr, dpi=self._dpi)
+        bgr, dpi = self._output()
+        ui_common.print_image(self, bgr, dpi=dpi)
 
 
 class SheetPreviewDialog(QDialog):
     """Preview the 4R sheet, choose the border style here, then Save / Print."""
 
-    def __init__(self, crops, parent=None):
+    def __init__(self, crops_fn, parent=None):
         super().__init__(parent)
         self.setWindowTitle("4R print preview — 15×10 cm")
         self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
-        self._crops = crops
+        self._crops_fn = crops_fn
+        self._base_crops = crops_fn(1)   # scale-1 crops for the preview
         self._bgr = None
 
         layout = QVBoxLayout(self)
@@ -97,6 +112,9 @@ class SheetPreviewDialog(QDialog):
         self._border.addItem("Thin border only (bigger photos)", False)
         self._border.currentIndexChanged.connect(self._render)
         brow.addWidget(self._border)
+        brow.addSpacing(16)
+        self._hires = ui_common.hires_checkbox()
+        brow.addWidget(self._hires)
         brow.addStretch()
         layout.addLayout(brow)
 
@@ -122,9 +140,14 @@ class SheetPreviewDialog(QDialog):
 
         self._render()
 
+    def _build(self, scale: int):
+        instax = self._border.currentData()
+        crops = self._base_crops if scale == 1 else self._crops_fn(scale)
+        return composite.build_4r(crops, instax_border=instax, scale=scale)
+
     def _render(self) -> None:
         instax = self._border.currentData()
-        self._bgr = composite.build_4r(self._crops, instax_border=instax)
+        self._bgr = composite.build_4r(self._base_crops, instax_border=instax)
         self._hint.setText(
             "Each photo inside a full instax card — white frame, thick bottom."
             if instax else
@@ -138,11 +161,18 @@ class SheetPreviewDialog(QDialog):
         )
         self._img_lbl.setPixmap(pix)
 
+    def _output(self):
+        scale = ui_common.HIRES_SCALE if self._hires.isChecked() else 1
+        bgr = self._bgr if scale == 1 else self._build(scale)
+        return bgr, cfg.PRINT_DPI * scale
+
     def _save(self) -> None:
-        ui_common.save_image(self, self._bgr, "instax_4r", dpi=cfg.PRINT_DPI)
+        bgr, dpi = self._output()
+        ui_common.save_image(self, bgr, "instax_4r", dpi=dpi)
 
     def _print(self) -> None:
-        ui_common.print_image(self, self._bgr, dpi=cfg.PRINT_DPI)
+        bgr, dpi = self._output()
+        ui_common.print_image(self, bgr, dpi=dpi)
 
 
 class SheetPage(QWidget):
@@ -223,11 +253,10 @@ class SheetPage(QWidget):
         self._update_state()
 
     def _on_generate(self) -> None:
-        crops = [s.get_output() for s in self.slots]
-        if any(c is None for c in crops):
+        if any(not s.is_ready() for s in self.slots):
             QMessageBox.warning(self, "Not ready", "All three images must be loaded first.")
             return
-        SheetPreviewDialog(crops, self).exec()
+        SheetPreviewDialog(lambda scale=1: [s.get_output(scale) for s in self.slots], self).exec()
 
 
 class MainWindow(QMainWindow):
@@ -241,9 +270,9 @@ class MainWindow(QMainWindow):
         self._sheet_page = SheetPage()
         self._collage_page = CollagePage()
         self._a4_page = A4Page(
-            lambda bgr, parent: PreviewDialog(
+            lambda bgr, parent, render_fn=None: PreviewDialog(
                 bgr, parent, title="A4 instax sheet — 297×210 mm",
-                base_name="instax_a4", dpi=cfg.PRINT_DPI)
+                base_name="instax_a4", dpi=cfg.PRINT_DPI, render_fn=render_fn)
         )
         self._stack.addWidget(self._sheet_page)     # index 0
         self._stack.addWidget(self._collage_page)   # index 1

@@ -109,11 +109,14 @@ class CropCanvas(QWidget):
         s_min = imaging.min_scale(self.angle, self._out_w, self._out_h, self._w, self._h)
         return s_min * self.zoom
 
-    def get_output(self) -> np.ndarray | None:
+    def get_output(self, scale: int = 1) -> np.ndarray | None:
+        """The framed crop as a BGR image. `scale` renders the same crop at
+        `scale`× resolution (sampled from the source, for higher-DPI output)."""
         if self._img is None:
             return None
         return imaging.render_crop(
-            self._img, self.angle, self.scale(), self.cx, self.cy, self._out_w, self._out_h
+            self._img, self.angle, self.scale() * scale, self.cx, self.cy,
+            round(self._out_w * scale), round(self._out_h * scale)
         )
 
     def source_dpi(self) -> float:

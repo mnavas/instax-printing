@@ -189,25 +189,28 @@ class CollagePage(QWidget):
                 self._status.setStyleSheet(f"color: {ui_common.OK}; font-size: 12px; font-weight: 600;")
 
     def _on_export(self) -> None:
-        crops = [s.get_output() for s in self._slots]
-        if any(c is None for c in crops):
+        if any(not s.is_ready() for s in self._slots):
             QMessageBox.warning(self, "Not ready", "Every cell must have a photo first.")
             return
         fmt, template = self._current()
-        CollagePreviewDialog(fmt, template, crops, self).exec()
+        CollagePreviewDialog(
+            fmt, template,
+            lambda scale=1: [s.get_output(scale) for s in self._slots], self,
+        ).exec()
 
 
 class CollagePreviewDialog(QDialog):
     """Preview the collage, set the gutter between photos and the border here, see
     how it looks, then Save / Print."""
 
-    def __init__(self, fmt, template, crops, parent=None):
+    def __init__(self, fmt, template, crops_fn, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{fmt.label} collage preview")
         self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
         self._fmt = fmt
         self._template = template
-        self._crops = crops
+        self._crops_fn = crops_fn
+        self._base_crops = crops_fn(1)   # scale-1 crops for the preview
         self._bgr = None
 
         layout = QVBoxLayout(self)
@@ -233,6 +236,9 @@ class CollagePreviewDialog(QDialog):
         self._border.setStyleSheet(f"color: {ui_common.INK}; font-size: 12px;")
         self._border.toggled.connect(self._render)
         ctl.addWidget(self._border)
+        ctl.addSpacing(16)
+        self._hires = ui_common.hires_checkbox()
+        ctl.addWidget(self._hires)
         ctl.addStretch()
         layout.addLayout(ctl)
 
@@ -258,10 +264,17 @@ class CollagePreviewDialog(QDialog):
 
         self._render()
 
+    def _build(self, scale: int):
+        crops = self._base_crops if scale == 1 else self._crops_fn(scale)
+        return collage.build_collage(
+            self._fmt, self._template, crops, self._gap.currentData(),
+            self._border.isChecked(), scale=scale,
+        )
+
     def _render(self) -> None:
         with_border = self._border.isChecked()
         self._bgr = collage.build_collage(
-            self._fmt, self._template, self._crops, self._gap.currentData(), with_border
+            self._fmt, self._template, self._base_crops, self._gap.currentData(), with_border
         )
         self._hint.setText(
             "Full instax card border — for a normal printer (an instax printer "
@@ -277,10 +290,16 @@ class CollagePreviewDialog(QDialog):
         )
         self._img_lbl.setPixmap(pix)
 
+    def _output(self):
+        scale = ui_common.HIRES_SCALE if self._hires.isChecked() else 1
+        bgr = self._bgr if scale == 1 else self._build(scale)
+        return bgr, round(self._fmt.dpi_x) * scale
+
     def _save(self) -> None:
         tail = "border" if self._border.isChecked() else "image"
-        ui_common.save_image(self, self._bgr, f"instax_{self._fmt.key}_collage_{tail}",
-                             dpi=round(self._fmt.dpi_x))
+        bgr, dpi = self._output()
+        ui_common.save_image(self, bgr, f"instax_{self._fmt.key}_collage_{tail}", dpi=dpi)
 
     def _print(self) -> None:
-        ui_common.print_image(self, self._bgr, dpi=round(self._fmt.dpi_x))
+        bgr, dpi = self._output()
+        ui_common.print_image(self, bgr, dpi=dpi)

@@ -179,6 +179,14 @@ earlier one**. You can of course rename it to whatever you like.
 Opens the system print dialog and sends the sheet straight to a printer at 300
 DPI, scaled to fit the page while keeping its aspect ratio and centred.
 
+### High resolution (600 DPI)
+
+Tick **High resolution (2× · 600 DPI)** to save or print at **double** the pixels
+and DPI. The output is **re-rendered from your source photos**, so the extra
+resolution is real detail (not upscaling) — useful for sharper prints or larger
+reproductions. The file is bigger; leave the box unticked for the usual 300-DPI
+output. This option is in **every** tool's preview (4R sheet, collage, and A4).
+
 ### Close
 
 Dismisses the preview and returns to the crop stations — your three crops are
@@ -261,7 +269,9 @@ you print.
 
 **Save…** writes a JPEG/PNG/TIFF with the instax print DPI embedded (using the
 last-used folder and the same incremental naming as the sheet tool), and
-**Print…** sends it to a printer. **New collage** clears every cell to start over.
+**Print…** sends it to a printer. Tick **High resolution (2× · 600 DPI)** for a
+double-resolution file re-rendered from the source photos. **New collage** clears
+every cell to start over.
 
 > Changing the Format, Layout, or Gutter **keeps your loaded photos** — only cells
 > that a smaller layout removes are dropped — so you can tweak freely without
@@ -304,7 +314,8 @@ shows a print-ready **A4 landscape** page:
 
 **Save…** writes a 300-DPI A4 image (print it at **100% / actual size** for exact
 instax dimensions, or fit-to-page), **Print…** sends it to a printer, and **New
-sheet** clears everything.
+sheet** clears everything. Tick **High resolution (2× · 600 DPI)** for a
+double-resolution A4 re-rendered from the source photos.
 
 > **Tip:** to print several copies of the *same* photo, load it into each card.
 

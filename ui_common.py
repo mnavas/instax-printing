@@ -8,10 +8,14 @@ import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPainter
 from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
-from PyQt6.QtWidgets import QDialog, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QCheckBox, QDialog, QFileDialog, QMessageBox
 
 import imaging
 import instax_config as cfg
+
+# "High resolution" multiplier: render at 2× the pixels and embed 2× the DPI
+# (300 → 600), sampled from the source photos so the extra pixels are real detail.
+HIRES_SCALE = 2
 
 # ── instax-inspired palette ──────────────────────────────────────────────
 # Clean light panels with the signature instax pink and a few playful accents;
@@ -88,6 +92,14 @@ QMenu::item:checked {{ color: {PINK_DK}; font-weight: 700; }}
 
 QMessageBox {{ background: {BG}; }}
 """
+
+def hires_checkbox() -> QCheckBox:
+    """A 'High resolution' toggle for the save/print dialogs."""
+    cb = QCheckBox("High resolution (2× · 600 DPI)")
+    cb.setStyleSheet(f"color: {INK}; font-size: 12px;")
+    cb.setToolTip("Save/print at double the pixels and DPI (600), from the source photos.")
+    return cb
+
 
 # Folder the user saved to last, shared across both tools for the session.
 _last_save_dir = ""

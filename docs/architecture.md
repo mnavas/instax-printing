@@ -259,6 +259,24 @@ filled crops to `build_a4` and opens the shared `PreviewDialog` (title / base na
 
 ---
 
+## High-resolution output (the `scale` factor)
+
+Every compositor takes an integer `scale` (default 1); `build_4r`, `build_collage`
+and `build_a4` multiply every pixel dimension by it, and `CropCanvas.get_output`
+re-renders the crop at `scale`× by scaling **both** the output size and the crop
+transform (so the same framed region is sampled from the source at higher
+resolution — real detail, not upscaling). `ui_common.HIRES_SCALE = 2` is the one
+"high resolution" step (300 → 600 DPI).
+
+Each preview carries a **High resolution** checkbox (`ui_common.hires_checkbox()`).
+The on-screen preview always renders at `scale=1`; only **Save/Print** rebuild at
+`HIRES_SCALE` when it's ticked, via a `crops_fn(scale)` the page hands the dialog
+(the slots re-render their crops at that scale) and embed `base_dpi × scale`. The
+`PreviewDialog` used by the A4 tool takes an optional `render_fn(scale)` instead
+and shows the checkbox only when one is given.
+
+---
+
 ## The UI (`main_window.py`, `collage_page.py`, `crop_station.py`)
 
 ### `CropSlot(QWidget)` — `crop_station.py`
