@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>instax-printing — Three instax minis on one 4R print</title>
-  <meta name="description" content="Arrange three photos as instax-mini cards on a single print-ready 4R (15×10 cm) sheet, with the real white border and cut marks. Print three instax for the price of one photo. Free and open source." />
+  <title>instax-printing — turn your photos into instax prints</title>
+  <meta name="description" content="A desktop app with three tools to print your photos as instax: three minis on a cheap 4R lab sheet, a multi-photo collage for an instax printer (Mini/Square/Wide), or a full A4 packed to print and cut at home. Real white borders, cut lines, 300/600 DPI. Free and open source." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -386,6 +386,7 @@
       <span>🖼 instax-printing</span>
     </a>
     <div class="nav-links">
+      <a href="#tools">Tools</a>
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
       <a href="#specs">Sizes</a>
@@ -398,6 +399,7 @@
     </button>
   </div>
   <div class="nav-mobile" id="nav-mobile">
+    <a href="#tools" onclick="closeNav()">Tools</a>
     <a href="#features" onclick="closeNav()">Features</a>
     <a href="#how" onclick="closeNav()">How it works</a>
     <a href="#specs" onclick="closeNav()">Sizes</a>
@@ -410,16 +412,17 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">🖼 Open source · Desktop app</div>
-  <h1>Three instax minis on<br/><span class="highlight">one cheap 4R print</span></h1>
-  <p>Pick three photos, frame each inside a real instax-mini card — white border and all — and lay them on a print-ready 15×10 cm sheet with cut marks. Print, cut, done.</p>
+  <h1>Turn your photos into<br/><span class="highlight">instax prints</span></h1>
+  <p>A desktop app with three ways to print instax: three minis on a cheap 4R lab sheet, a multi-photo collage for an instax printer, or a whole A4 packed to print and cut at home. Real white borders, cut lines, and the same quick crop in every tool.</p>
   <div class="hero-actions">
     <a href="https://github.com/mnavas/instax-printing" class="btn btn-primary">⬇ Get it on GitHub</a>
     <a href="docs/user-guide.md" class="btn btn-outline">Read the docs</a>
   </div>
   <div class="hero-meta">
-    <span>🎞 Real instax-mini look</span>
-    <span>✂️ Cut marks included</span>
-    <span>🖨 300 DPI, print-ready</span>
+    <span>🎞 Real instax look</span>
+    <span>🖼 Mini · Square · Wide</span>
+    <span>✂️ Cut lines included</span>
+    <span>🖨 300 / 600 DPI</span>
     <span>🐍 Python · PyQt6</span>
   </div>
 
@@ -433,12 +436,39 @@
   </div>
 </section>
 
+<!-- TOOLS -->
+<section class="section" id="tools" style="background:var(--white);">
+  <div class="section-inner">
+    <div class="section-label">Three tools</div>
+    <h2 class="section-title">One app, three ways to print instax</h2>
+    <p class="section-sub">Switch tools from the menu — the same crop stations, formats, and high-resolution export in each.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎞</div>
+        <h3>4R Print Sheet</h3>
+        <p>Three instax-mini photos on one <strong>15×10 cm 4R</strong> lab print with cut lines. Choose the real instax border (white frame, thick bottom) or a thin border for bigger photos. Print three instax for the price of one lab photo.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧩</div>
+        <h3>Instax Collage</h3>
+        <p>Combine several photos into <strong>one</strong> instax-sized image — <strong>Mini, Square, or Wide</strong> — from 15 preset layouts. Export at the printer's native size for an <strong>instax printer</strong>, or wrapped in a white border for a normal printer.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗒️</div>
+        <h3>A4 Instax Sheet</h3>
+        <p>Pack the <strong>most instax that fit on an A4</strong> — 10 Mini, 8 Square, or 4 Wide — true-size with full white borders and cut lines, centred for <strong>home printing</strong>. Print it and cut them out.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- FEATURES -->
 <section class="section features" id="features">
   <div class="section-inner">
     <div class="section-label">Features</div>
-    <h2 class="section-title">Print-shop instax, three at a time</h2>
-    <p class="section-sub">Everything you need to turn phone photos into instax-mini prints on a standard lab sheet.</p>
+    <h2 class="section-title">Sharp, true-size instax in every tool</h2>
+    <p class="section-sub">The same quick crop, resolution checks, and export back all three tools.</p>
 
     <div class="feature-grid">
 
@@ -468,8 +498,8 @@
 
       <div class="feature-card">
         <div class="feature-icon">✂️</div>
-        <h3>Just the cuts you need</h3>
-        <p>Cards pack edge-to-edge and flush to the top, so you only cut two vertical lines and one bottom trim — the sheet's own edges are the outer borders.</p>
+        <h3>Clear cut lines</h3>
+        <p>Every sheet marks exactly where to cut — the 4R packs cards edge-to-edge for fewer cuts, and the A4 outlines each card — so trimming is quick and straight.</p>
       </div>
 
       <div class="feature-card">
@@ -479,15 +509,9 @@
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon">🧩</div>
-        <h3>Instax Collage tool</h3>
-        <p>Combine several photos into one instax-sized image — Mini, Square, or Wide — in a preset grid. Export at the printer's native resolution for an instax printer, or with the white border drawn on.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🗒️</div>
-        <h3>A4 Instax Sheet tool</h3>
-        <p>Pack the most instax cards that fit on a landscape A4 — 10 Mini, 8 Square, or 4 Wide — true-size with full white borders and cut lines, centred for home printing. Print it and cut them out.</p>
+        <div class="feature-icon">🖼</div>
+        <h3>Three instax formats</h3>
+        <p>Mini (46×62 mm), Square (62×62 mm), and Wide (99×62 mm) — correct card dimensions and the real 8 mm-top / 16 mm-bottom border, so cut-outs match genuine instax prints.</p>
       </div>
 
       <div class="feature-card">
@@ -510,36 +534,36 @@
 <section class="section how" id="how">
   <div class="section-inner">
     <div class="section-label">How it works</div>
-    <h2 class="section-title">From three photos to a print in a minute</h2>
-    <p class="section-sub">No projects to manage, no export presets to configure — just load, frame, generate.</p>
+    <h2 class="section-title">From photos to prints in a minute</h2>
+    <p class="section-sub">Pick a tool, drop in your photos, and print — no projects to manage, no export presets to configure.</p>
 
     <div class="how-grid">
       <div class="how-step">
         <div class="how-num">1</div>
         <div>
-          <h3>Load three photos</h3>
-          <p>One per crop slot. JPEG, PNG, TIFF, BMP, WEBP — the picker remembers your folder so a shoot goes fast.</p>
+          <h3>Pick a tool</h3>
+          <p>From the menu: 4R sheet, instax collage, or A4 sheet. Same crop stations and formats in each.</p>
         </div>
       </div>
       <div class="how-step">
         <div class="how-num">2</div>
         <div>
-          <h3>Frame each one</h3>
-          <p>Drag, zoom, and rotate the instax frame until it covers exactly what you want. Watch the DPI readout stay green.</p>
+          <h3>Load &amp; frame</h3>
+          <p>Drop in your photos (JPEG, PNG, TIFF, BMP, WEBP) and drag, zoom, and rotate each frame. Watch the DPI readout stay green.</p>
         </div>
       </div>
       <div class="how-step">
         <div class="how-num">3</div>
         <div>
-          <h3>Generate the sheet</h3>
-          <p>One click lays the three instax cards on a 4R with cut marks and opens a preview at 15×10 cm.</p>
+          <h3>Generate &amp; choose</h3>
+          <p>One click opens a preview, where you pick the border, gutter, or high-resolution option — and see exactly what you'll get.</p>
         </div>
       </div>
       <div class="how-step">
         <div class="how-num">4</div>
         <div>
           <h3>Print &amp; cut</h3>
-          <p>Save or print at 300 DPI, then make three straight cuts. Each piece is an instax-mini-style print.</p>
+          <p>Save or print at 300 — or 600 — DPI, then cut along the lines. Each piece is an instax-style print.</p>
         </div>
       </div>
     </div>
@@ -551,18 +575,18 @@
   <div class="section-inner">
     <div class="section-label">Sizes</div>
     <h2 class="section-title">Anchored to real millimetres</h2>
-    <p class="section-sub">Every dimension is defined in mm and rendered at 300 DPI, so the exported file prints at the correct physical size.</p>
+    <p class="section-sub">Every dimension is defined in mm and rendered at 300 DPI (or 600 at high resolution), so the exported file prints at the correct physical size.</p>
 
     <table class="specs-table">
-      <tr><th>Element</th><th>Millimetres</th><th>Pixels @ 300 DPI</th></tr>
-      <tr><td>4R sheet (landscape)</td><td>152.4 × 101.6</td><td>1800 × 1200</td></tr>
-      <tr><td>instax-mini card</td><td>54 × 86</td><td>638 × 1016</td></tr>
-      <tr><td>instax image area</td><td>46 × 62</td><td>543 × 732</td></tr>
-      <tr><td>top / side border</td><td>4</td><td>~47</td></tr>
+      <tr><th>Instax format</th><th>Image area (mm)</th><th>Full card (mm)</th><th>On an A4</th></tr>
+      <tr><td>Mini</td><td>46 × 62</td><td>54 × 86</td><td>10 (5 × 2)</td></tr>
+      <tr><td>Square</td><td>62 × 62</td><td>72 × 86</td><td>8 (4 × 2)</td></tr>
+      <tr><td>Wide</td><td>99 × 62</td><td>108 × 86</td><td>4 (2 × 2)</td></tr>
+      <tr><td>4R sheet (3 Mini)</td><td>—</td><td>152.4 × 101.6</td><td>—</td></tr>
     </table>
 
     <p class="specs-note">
-      The image area sits inside the card with 4 mm side borders, an 8 mm top border, and a 16 mm bottom border — the image offset toward the top for the classic instax look. Three 54 mm cards (162 mm) are a touch wider than the 4R (152 mm), so they print slightly under full size. All layout numbers live in <code style="color:#F6A5C0;font-family:'JetBrains Mono',monospace;">instax_config.py</code> and are easy to tweak.
+      Every format shares an 86 mm card height and a 62 mm image, so the white border is the same on all three: 8 mm top, 16 mm bottom (the image offset toward the top for the classic instax look), with 4–5 mm sides. All layout numbers live in <code style="color:#F6A5C0;font-family:'JetBrains Mono',monospace;">instax_config.py</code> and are easy to tweak.
     </p>
   </div>
 </section>
@@ -593,7 +617,7 @@
         <div class="step-num">3</div>
         <div>
           <h3>Load, frame, print</h3>
-          <p>The window opens with three empty crop slots. Load a photo into each, frame it, and generate your 4R sheet.</p>
+          <p>The window opens on the 4R tool with three empty crop slots — load, frame, and generate. Switch to the collage or A4 tool anytime from the Tools menu.</p>
         </div>
       </div>
     </div>
@@ -716,7 +740,7 @@ python main.py</pre>
   <div class="footer-brand">
     <span>🖼 instax-printing</span>
   </div>
-  <p>Three instax-mini photos on a print-ready 4R sheet</p>
+  <p>Print your photos as instax — 4R sheet, collage, or a full A4</p>
   <nav>
     <a href="https://github.com/mnavas/instax-printing">GitHub</a>
     <a href="docs/installation.md">Install</a>

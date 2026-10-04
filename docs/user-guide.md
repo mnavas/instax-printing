@@ -13,7 +13,7 @@ fit on one cheap standard 4R print.
 
 ---
 
-## Two Tools (the menu)
+## Three Tools (the menu)
 
 The app has three tools, chosen from the **Tools** menu in the menu bar:
 
