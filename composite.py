@@ -41,23 +41,65 @@ def _draw_cut_marks(canvas: np.ndarray, positions, cw: int, ch: int) -> None:
     cv2.line(canvas, (x_left, y_bot), (x_right, y_bot), gray, g, cv2.LINE_AA)
 
 
-def build_4r(crops: list[np.ndarray]) -> np.ndarray:
-    """Return a CANVAS_W×CANVAS_H BGR image with three instax cards packed
-    edge-to-edge and flush to the top, with cut marks only where cuts are needed.
+def make_thin_card(crop: np.ndarray, border_px: int) -> np.ndarray:
+    """The instax image area with only a thin uniform white border on every side
+    (no instax frame) — a near-borderless print."""
+    iw, ih = cfg.INSTAX_W, cfg.INSTAX_H
+    b = border_px
+    card = np.full((ih + 2 * b, iw + 2 * b, 3), 255, dtype=np.uint8)
+    card[b:b + ih, b:b + iw] = cv2.resize(crop, (iw, ih), interpolation=cv2.INTER_AREA)
+    return card
 
-    `crops` must hold exactly three instax-ratio (image-area) images.
-    """
-    if len(crops) != 3:
-        raise ValueError("build_4r expects exactly three crops")
 
+def _build_4r_instax(crops: list[np.ndarray]) -> np.ndarray:
+    """Three full instax cards, packed edge-to-edge and flush to the top, with cut
+    marks only where cuts are needed."""
     canvas = np.full((cfg.CANVAS_H, cfg.CANVAS_W, 3), 255, dtype=np.uint8)
     cw, ch = cfg.card_print_size()
     positions = cfg.card_positions()
-
     for (x, y), crop in zip(positions, crops):
         card = make_instax_card(crop)
         resized = cv2.resize(card, (cw, ch), interpolation=cv2.INTER_AREA)
         canvas[y:y + ch, x:x + cw] = resized
-
     _draw_cut_marks(canvas, positions, cw, ch)
     return canvas
+
+
+def _build_4r_thin(crops: list[np.ndarray], border_mm: float) -> np.ndarray:
+    """Three thin-bordered (near-borderless) photos tiled across the 4R, centred,
+    each outlined with a cut line."""
+    b = cfg.mm_to_px(border_mm)
+    native_w, native_h = cfg.INSTAX_W + 2 * b, cfg.INSTAX_H + 2 * b
+    # Size the cards so three fit across the 4R width (capped at native size).
+    w = min(native_w, cfg.CANVAS_W // 3)
+    h = round(w * native_h / native_w)
+    if h > cfg.CANVAS_H:
+        h = cfg.CANVAS_H
+        w = round(h * native_w / native_h)
+
+    canvas = np.full((cfg.CANVAS_H, cfg.CANVAS_W, 3), 255, dtype=np.uint8)
+    x0 = (cfg.CANVAS_W - 3 * w) // 2
+    y0 = (cfg.CANVAS_H - h) // 2
+    for i, crop in enumerate(crops):
+        card = cv2.resize(make_thin_card(crop, b), (w, h), interpolation=cv2.INTER_AREA)
+        x = x0 + i * w
+        canvas[y0:y0 + h, x:x + w] = card
+        cv2.rectangle(canvas, (x, y0), (x + w - 1, y0 + h - 1),
+                      cfg.TRIM_LINE_COLOR, 1, cv2.LINE_AA)
+    return canvas
+
+
+def build_4r(crops: list[np.ndarray], instax_border: bool = True,
+             thin_border_mm: float = 2.0) -> np.ndarray:
+    """Return a CANVAS_W×CANVAS_H BGR 4R sheet of three photos.
+
+    `instax_border=True` places each photo in a full instax card (white frame,
+    thick bottom). `instax_border=False` gives each photo only a thin uniform
+    white border (bigger image). `crops` must hold exactly three instax-ratio
+    (image-area) images.
+    """
+    if len(crops) != 3:
+        raise ValueError("build_4r expects exactly three crops")
+    if instax_border:
+        return _build_4r_instax(crops)
+    return _build_4r_thin(crops, thin_border_mm)

@@ -18,15 +18,19 @@ Three tools for instax prints, chosen from the **Tools** menu:
    mouse-wheel to zoom, and rotate (⟲/⟳ 90° buttons or the Angle slider). The
    frame is locked to the instax mini image ratio (46×62 mm) and always stays
    inside the photo, so the crop never has blank edges.
-3. When all three crops are ready, **Generate 4R sheet**. Each photo is placed
-   inside a full **instax-mini card** — white border, thin at the top, thick at
-   the bottom (the classic instax look) — and the three cards are laid across the
-   width of the 4R, centred, with **light-grey trim lines and corner crosses** so
-   you know exactly where to cut.
-4. **Save** the sheet as a 300-DPI JPG/PNG/TIFF (physical size embedded) or
+3. When all three crops are ready, **Generate 4R sheet**. The three photos are
+   laid across the width of the 4R, centred, with **light-grey cut lines** so you
+   know exactly where to cut.
+4. In the preview, choose the **border** style:
+   - **Instax border** (default) — each photo inside a full **instax-mini card**
+     (white border, thin top/sides, thick bottom — the classic instax look).
+   - **Thin border only** — each photo with just a thin uniform white border, so
+     the images print **bigger**.
+5. **Save** the sheet as a 300-DPI JPG/PNG/TIFF (physical size embedded) or
    **Print** it directly.
 
-Print it, cut along the marks, and each piece looks like a real instax mini.
+Print it and cut along the lines — with the instax border, each piece looks like a
+real instax mini.
 
 ## Dimensions
 

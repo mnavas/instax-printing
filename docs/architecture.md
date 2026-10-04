@@ -162,21 +162,23 @@ handed to the compositor.
 ## Compositing the Sheet (`composite.py`)
 
 ```
-build_4r(crops)                     # crops: exactly three instax-ratio images
-  ├─ for each crop:
-  │    make_instax_card(crop)        # paste crop into a white 638×1016 card
-  │    cv2.resize → card_print_size()
-  │    blit onto the 1800×1200 canvas at card_positions()[i]
-  └─ _draw_cut_marks(canvas, …)      # 2 vertical cuts + 1 bottom trim
+build_4r(crops, instax_border=True, thin_border_mm=2.0)   # 3 instax-ratio crops
+  ├─ instax_border → _build_4r_instax(crops)              # full instax cards
+  └─ else          → _build_4r_thin(crops, thin_border_mm) # thin-bordered photos
 ```
 
-- `make_instax_card(crop)` builds one native-size card: a white
-  `CARD_H × CARD_W` array with the crop resized into the `INSTAX_W × INSTAX_H`
-  image area at `image_offset()`.
-- `_draw_cut_marks` draws only the cuts the top-flush, edge-to-edge layout needs:
-  two full-height vertical lines at the card boundaries and one horizontal line at
-  the card bottom, in light grey (`TRIM_LINE_COLOR`). The left/right/top borders
-  are the sheet edges, so nothing is drawn there.
+Two styles, chosen in the preview:
+
+- **`_build_4r_instax`** — `make_instax_card(crop)` builds one native-size card (a
+  white `CARD_H × CARD_W` array with the crop in the `INSTAX_W × INSTAX_H` image
+  area at `image_offset()`); the three cards are packed edge-to-edge, flush to the
+  top. `_draw_cut_marks` draws only the cuts that layout needs — two full-height
+  vertical lines at the card boundaries and one horizontal line at the card bottom
+  (light grey `TRIM_LINE_COLOR`); the left/right/top edges are the sheet's own.
+- **`_build_4r_thin`** — `make_thin_card(crop, border_px)` gives each photo only a
+  thin uniform white border; the three are sized to fit the 4R width (capped at
+  native), centred, and each gets a `cv2.rectangle` cut line. Bigger photos, no
+  instax frame.
 
 `build_4r` raises `ValueError` if it isn't given exactly three crops.
 
@@ -273,12 +275,15 @@ collage cells.
 shared across every slot in both tools. `_IMG_EXTS` is listed in both cases so the
 native file dialog's case-sensitive globbing doesn't hide `.JPG` photos.
 
-### `SheetPage` / `PreviewDialog` — `main_window.py`
+### `SheetPage` / `SheetPreviewDialog` / `PreviewDialog` — `main_window.py`
 
 `SheetPage` holds the three mini `CropSlot`s, the status line, and the **New
-sheet** / **Generate 4R sheet** buttons; `_on_generate` calls `composite.build_4r`
-and opens `PreviewDialog`, which shows the sheet (scaled to 900 px) with **Save… /
-Print… / Close** via the shared `ui_common` helpers.
+sheet** / **Generate 4R sheet** buttons; `_on_generate` passes the crops to
+`SheetPreviewDialog`, which has a **Border** picker (**Instax border** /
+**Thin border only**) that re-renders live via `composite.build_4r(...,
+instax_border=...)`, plus **Save… / Print… / Close** through the shared
+`ui_common` helpers. `PreviewDialog` is the simpler shared dialog (a pre-built
+image + Save/Print, with `title`/`base_name`/`dpi` params) used by the A4 tool.
 
 ### `CollagePage` / `CollagePreviewDialog` — `collage_page.py`
 

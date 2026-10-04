@@ -6,6 +6,7 @@ import cv2
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QActionGroup, QImage, QPixmap
 from PyQt6.QtWidgets import (
+    QComboBox,
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -69,6 +70,79 @@ class PreviewDialog(QDialog):
 
     def _print(self) -> None:
         ui_common.print_image(self, self._bgr, dpi=self._dpi)
+
+
+class SheetPreviewDialog(QDialog):
+    """Preview the 4R sheet, choose the border style here, then Save / Print."""
+
+    def __init__(self, crops, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("4R print preview — 15×10 cm")
+        self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
+        self._crops = crops
+        self._bgr = None
+
+        layout = QVBoxLayout(self)
+        self._img_lbl = QLabel()
+        self._img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._img_lbl)
+
+        brow = QHBoxLayout()
+        brow.setSpacing(8)
+        lbl = QLabel("Border")
+        lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
+        brow.addWidget(lbl)
+        self._border = QComboBox()
+        self._border.addItem("Instax border (white frame, thick bottom)", True)
+        self._border.addItem("Thin border only (bigger photos)", False)
+        self._border.currentIndexChanged.connect(self._render)
+        brow.addWidget(self._border)
+        brow.addStretch()
+        layout.addLayout(brow)
+
+        self._hint = QLabel("")
+        self._hint.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 11px;")
+        self._hint.setWordWrap(True)
+        layout.addWidget(self._hint)
+
+        row = QHBoxLayout()
+        row.addStretch()
+        save = QPushButton("Save…")
+        save.setStyleSheet(ui_common.STYLE_ACCENT)
+        save.clicked.connect(self._save)
+        printb = QPushButton("Print…")
+        printb.setStyleSheet(ui_common.STYLE_BTN)
+        printb.clicked.connect(self._print)
+        close = QPushButton("Close")
+        close.setStyleSheet(ui_common.STYLE_BTN)
+        close.clicked.connect(self.reject)
+        for w in (save, printb, close):
+            row.addWidget(w)
+        layout.addLayout(row)
+
+        self._render()
+
+    def _render(self) -> None:
+        instax = self._border.currentData()
+        self._bgr = composite.build_4r(self._crops, instax_border=instax)
+        self._hint.setText(
+            "Each photo inside a full instax card — white frame, thick bottom."
+            if instax else
+            "Each photo with only a thin white border — bigger image; cut along the lines."
+        )
+        rgb = cv2.cvtColor(self._bgr, cv2.COLOR_BGR2RGB)
+        h, w = rgb.shape[:2]
+        qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
+        pix = QPixmap.fromImage(qimg).scaledToWidth(
+            840, Qt.TransformationMode.SmoothTransformation
+        )
+        self._img_lbl.setPixmap(pix)
+
+    def _save(self) -> None:
+        ui_common.save_image(self, self._bgr, "instax_4r", dpi=cfg.PRINT_DPI)
+
+    def _print(self) -> None:
+        ui_common.print_image(self, self._bgr, dpi=cfg.PRINT_DPI)
 
 
 class SheetPage(QWidget):
@@ -153,8 +227,7 @@ class SheetPage(QWidget):
         if any(c is None for c in crops):
             QMessageBox.warning(self, "Not ready", "All three images must be loaded first.")
             return
-        sheet = composite.build_4r(crops)
-        PreviewDialog(sheet, self).exec()
+        SheetPreviewDialog(crops, self).exec()
 
 
 class MainWindow(QMainWindow):

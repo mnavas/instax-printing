@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.11
+
+- **4R sheet: choose the border in the preview.** The 4R Print Sheet now offers
+  two styles, picked live in the preview:
+  - **Instax border** (default) — each photo in a full instax card (white frame,
+    thick bottom), as before.
+  - **Thin border only** — each photo with just a thin uniform white border, so
+    the images print **bigger**, with cut lines to trim them out.
+
 ## v0.0.10
 
 - **Corrected the instax border dimensions.** The top border is **8 mm** (not

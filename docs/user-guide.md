@@ -131,23 +131,31 @@ The status bar at the bottom summarises the whole sheet:
 
 ## Generating the 4R Sheet
 
-When all three photos are framed, click **Generate 4R sheet**. Each crop is
-placed inside a full instax-mini card and the three cards are packed **edge-to-edge
-and flush to the top** of the 4R. A preview window opens showing the finished
-sheet at **15×10 cm**.
+When all three photos are framed, click **Generate 4R sheet**. A preview window
+opens showing the finished sheet at **15×10 cm**, where you choose the **border**
+style (the preview updates as you switch):
 
-### What the sheet looks like
+### Border: Instax border (default)
+
+Each crop is placed inside a full **instax-mini card** (white border, thin
+top/sides, thick bottom) and the three cards are packed **edge-to-edge and flush
+to the top** of the 4R:
 
 - Three **54×86 mm instax cards** across the width, white borders and all.
-- **Cut marks** only where you actually need to cut:
-  - two **full-height vertical lines** between the cards, and
-  - one **horizontal trim line** across the bottom of the cards.
-- The **left, right, and top edges are the sheet's own trim edges** — nothing to
-  cut there.
+- **Cut marks** only where you need to cut — two **full-height vertical lines**
+  between the cards and one **horizontal trim line** across the card bottoms; the
+  left/right/top edges are the sheet's own trim edges.
 
 Because three 54 mm cards (162 mm) are slightly wider than the 4R (152 mm), the
-cards print a touch under full instax size — the difference is a couple of
-millimetres and not noticeable once cut.
+cards print a touch under full instax size — a couple of millimetres, not
+noticeable once cut. Each cut-out looks like a real instax mini.
+
+### Border: Thin border only
+
+Each photo gets just a **thin uniform white border** (no instax frame), so the
+images print **bigger**. The three photos are centred across the 4R, each outlined
+with a **cut line** — trim along the lines for near-borderless prints. Pick this
+when you want more photo and less white.
 
 ---
 
