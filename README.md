@@ -2,8 +2,10 @@
 
 Three tools for instax prints, chosen from the **Tools** menu:
 
-1. **4R Print Sheet** — arrange **three instax-mini photos** onto a single **4R
-   (15×10 cm) print sheet**, ready to send to a photo lab and cut apart.
+1. **4R Print Sheet** — arrange photos onto a single **4R (15×10 cm) print sheet**,
+   ready to send to a photo lab and cut apart. Pick a **Layout** from the dropdown:
+   3 instax minis (with or **without** the white frame), or a **2×2 / 3×2 / 2×3**
+   grid of photos separated by white gutters with cut lines.
 2. **Instax Collage** — combine several photos into **one** instax-sized image
    (Mini, Square, or Wide) and export it — as a plain image for an **instax
    printer**, or with the white instax border drawn on.
@@ -13,20 +15,22 @@ Three tools for instax prints, chosen from the **Tools** menu:
 
 ## What it does (4R Print Sheet)
 
-1. Load three images.
-2. For each, position an **instax-mini-shaped crop frame** — drag to move,
-   mouse-wheel to zoom, and rotate (⟲/⟳ 90° buttons or the Angle slider). The
-   frame is locked to the instax mini image ratio (46×62 mm) and always stays
-   inside the photo, so the crop never has blank edges.
-3. When all three crops are ready, **Generate 4R sheet**. The three photos are
-   laid across the width of the 4R, centred, with **light-grey cut lines** so you
-   know exactly where to cut.
-4. In the preview, choose the **border** style:
-   - **Instax border** (default) — each photo inside a full **instax-mini card**
-     (white border, thin top/sides, thick bottom — the classic instax look).
-   - **Thin border only** — each photo with just a thin uniform white border, so
-     the images print **bigger**.
-5. **Save** the sheet as a 300-DPI JPG/PNG/TIFF (physical size embedded) or
+1. Pick a **Layout** from the dropdown at the top:
+   - **3 × Instax mini — white frame** — each photo inside a full **instax-mini
+     card** (white border, thin top/sides, thick bottom — the classic instax look).
+   - **4 × Instax mini — no frame (portrait)** — the sheet turns **portrait** so
+     **four** full-size upright minis fit as a 2×2 (only three fit on a landscape 4R).
+   - **2 × 2 grid — 4 photos**, **3 × 2 grid — 6 photos**, **2 × 3 grid — 6 photos**
+     — a plain grid of photos separated by white gutters with **cut lines** down
+     the middle; print, then cut, into bordered prints.
+   The crop stations below rebuild to match (the right number of photos, each
+   cropped to the right shape, arranged like the printed grid).
+2. Load each image and position its **crop frame** — drag to move, mouse-wheel to
+   zoom, and rotate (⟲/⟳ 90° buttons or the Angle slider). The frame is locked to
+   the cell's aspect ratio and always stays inside the photo, so the crop never has
+   blank edges. A live **DPI** readout warns if a photo is too low-res.
+3. When all the photos are ready, **Generate 4R sheet** to preview it.
+4. **Save** the sheet as a 300-DPI JPG/PNG/TIFF (physical size embedded) or
    **Print** it directly. Tick **High resolution** in any tool's preview to save
    at **2× · 600 DPI** — re-rendered from the source photos, so it's real detail.
 

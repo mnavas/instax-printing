@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.0.13
+
+- **Layout selector in the main 4R window.** A new **Layout** dropdown at the top
+  of the 4R Print Sheet tool chooses the sheet arrangement up front (it used to be
+  buried as a border toggle inside the preview dialog):
+  - **3 × Instax mini — white frame** (the classic look)
+  - **4 × Instax mini — no frame (portrait)** — the sheet turns portrait so four
+    full-size upright minis fit as a 2×2 (where only three fit on a landscape sheet)
+  - **2 × 2 grid — 4 photos**
+  - **3 × 2 grid — 6 photos**
+  - **2 × 3 grid — 6 photos**
+  The grid layouts separate the photos with white gutters and draw cut lines down
+  their middle, so you print, then cut, into bordered prints. The crop stations now
+  rebuild to match the chosen layout (correct number of photos, each cropped to the
+  right aspect) and are arranged to mirror the printed grid.
+- **Preview dialog always fits the screen.** The preview is now bounded to the
+  available screen height (not just a fixed width), so tall/portrait sheets no
+  longer push the Save / Print buttons off-screen.
+
 ## v0.0.12
 
 - **High-resolution saving (600 DPI) in every tool.** A **High resolution

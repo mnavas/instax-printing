@@ -85,6 +85,69 @@ def card_positions() -> list[tuple[int, int]]:
 
 
 # ----------------------------------------------------------------------
+# Sheet layouts for the main 4R tool — chosen from a dropdown in the window.
+# Besides the classic 3-up instax mini (with/without the white frame), the sheet
+# can hold a plain grid of photos separated by white gutters you cut along.
+# ----------------------------------------------------------------------
+from dataclasses import dataclass   # noqa: E402
+
+GRID_MARGIN_MM = 2.0   # outer white trim border of a grid sheet
+GRID_GAP_MM = 3.0      # white gutter between photos (you cut down its middle)
+
+
+def grid_cell_px(cols: int, rows: int, scale: int = 1) -> tuple[int, int]:
+    """Pixel size of one photo cell in a cols×rows grid on the 4R sheet."""
+    m = mm_to_px(GRID_MARGIN_MM) * scale
+    g = mm_to_px(GRID_GAP_MM) * scale
+    cw = (CANVAS_W * scale - 2 * m - (cols - 1) * g) // cols
+    ch = (CANVAS_H * scale - 2 * m - (rows - 1) * g) // rows
+    return cw, ch
+
+
+def grid_cell_phys_w_mm(cols: int) -> float:
+    return (CANVAS_W_MM - 2 * GRID_MARGIN_MM - (cols - 1) * GRID_GAP_MM) / cols
+
+
+@dataclass(frozen=True)
+class SheetLayout:
+    key: str
+    label: str
+    kind: str          # "instax" | "instax_thin" | "grid"
+    cols: int
+    rows: int
+
+    @property
+    def n(self) -> int:
+        return self.cols * self.rows
+
+    def crop_size(self) -> tuple[int, int, float]:
+        """(out_w, out_h, phys_w_mm) for each crop station in this layout.
+
+        Instax layouts always crop UPRIGHT (portrait 46×62) — the rotated layout
+        turns the finished print on the sheet, not the crop you compose."""
+        if self.kind in ("instax", "instax_thin", "instax_portrait"):
+            return INSTAX_W, INSTAX_H, INSTAX_W_MM
+        cw, ch = grid_cell_px(self.cols, self.rows)
+        return cw, ch, grid_cell_phys_w_mm(self.cols)
+
+
+SHEET_LAYOUTS = [
+    SheetLayout("instax3",      "3 × Instax mini — white frame",         "instax",          3, 1),
+    SheetLayout("instax4_p",    "4 × Instax mini — no frame (portrait)", "instax_portrait", 2, 2),
+    SheetLayout("grid2x2",      "2 × 2 grid — 4 photos",                 "grid",            2, 2),
+    SheetLayout("grid3x2",      "3 × 2 grid — 6 photos",                 "grid",            3, 2),
+    SheetLayout("grid2x3",      "2 × 3 grid — 6 photos",                 "grid",            2, 3),
+]
+
+
+def sheet_layout_by_key(key: str) -> SheetLayout:
+    for l in SHEET_LAYOUTS:
+        if l.key == key:
+            return l
+    return SHEET_LAYOUTS[0]
+
+
+# ----------------------------------------------------------------------
 # Instax formats — used by the Collage tool. Each format is defined in real
 # millimetres plus the native image-area pixel size of its instax printer, so a
 # collage exports at the right resolution to send straight to the printer.

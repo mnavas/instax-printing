@@ -3,17 +3,19 @@ sheet tool and the instax collage tool."""
 from __future__ import annotations
 
 import cv2
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QActionGroup, QImage, QPixmap
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtGui import QActionGroup, QGuiApplication, QImage, QPixmap
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -22,6 +24,20 @@ from PyQt6.QtWidgets import (
 import composite
 import instax_config as cfg
 import ui_common
+
+
+def _fit_pixmap(qimg: QImage, widget, max_w: int = 860) -> QPixmap:
+    """Scale a preview to fit inside both a max width and the available screen
+    height, so the dialog's buttons are never pushed off-screen (e.g. for a tall
+    portrait sheet)."""
+    scr = widget.screen() or QGuiApplication.primaryScreen()
+    avail_h = scr.availableGeometry().height() if scr else 800
+    max_h = max(360, avail_h - 220)   # leave room for controls + title bar
+    return QPixmap.fromImage(qimg).scaled(
+        QSize(max_w, max_h),
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation,
+    )
 from a4_page import A4Page
 from collage_page import CollagePage
 from crop_station import CropSlot
@@ -44,9 +60,7 @@ class PreviewDialog(QDialog):
         rgb = cv2.cvtColor(canvas_bgr, cv2.COLOR_BGR2RGB)
         h, w = rgb.shape[:2]
         qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
-        pix = QPixmap.fromImage(qimg).scaledToWidth(
-            900, Qt.TransformationMode.SmoothTransformation
-        )
+        pix = _fit_pixmap(qimg, self, max_w=900)
         img_lbl = QLabel()
         img_lbl.setPixmap(pix)
         img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -86,42 +100,44 @@ class PreviewDialog(QDialog):
         ui_common.print_image(self, bgr, dpi=dpi)
 
 
-class SheetPreviewDialog(QDialog):
-    """Preview the 4R sheet, choose the border style here, then Save / Print."""
+_SHEET_HINTS = {
+    "instax":      "Each photo inside a full instax card — white frame, thick bottom. "
+                   "Cut along the lines between cards.",
+    "instax_thin": "Each photo at instax-mini size with no white frame — bigger image. "
+                   "Cut along the outlines.",
+    "instax_portrait": "Four full-size instax-mini photos on a portrait 4R (turn the "
+                       "paper 90°). Cut along the outlines.",
+    "grid":        "A grid of photos separated by white gutters — cut down the middle of "
+                   "each line to get {n} bordered prints.",
+}
 
-    def __init__(self, crops_fn, parent=None):
+
+class SheetPreviewDialog(QDialog):
+    """Preview the composed 4R sheet for the chosen layout, then Save / Print."""
+
+    def __init__(self, layout, crops_fn, parent=None):
         super().__init__(parent)
         self.setWindowTitle("4R print preview — 15×10 cm")
         self.setStyleSheet(f"background-color: {ui_common.BG}; color: {ui_common.INK};")
+        self._layout = layout
         self._crops_fn = crops_fn
         self._base_crops = crops_fn(1)   # scale-1 crops for the preview
         self._bgr = None
 
-        layout = QVBoxLayout(self)
+        layout_box = QVBoxLayout(self)
         self._img_lbl = QLabel()
         self._img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self._img_lbl)
+        layout_box.addWidget(self._img_lbl)
 
         brow = QHBoxLayout()
         brow.setSpacing(8)
-        lbl = QLabel("Border")
-        lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
-        brow.addWidget(lbl)
-        self._border = QComboBox()
-        self._border.addItem("Instax border (white frame, thick bottom)", True)
-        self._border.addItem("Thin border only (bigger photos)", False)
-        self._border.currentIndexChanged.connect(self._render)
-        brow.addWidget(self._border)
-        brow.addSpacing(16)
-        self._hires = ui_common.hires_checkbox()
-        brow.addWidget(self._hires)
-        brow.addStretch()
-        layout.addLayout(brow)
-
         self._hint = QLabel("")
         self._hint.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 11px;")
         self._hint.setWordWrap(True)
-        layout.addWidget(self._hint)
+        brow.addWidget(self._hint, stretch=1)
+        self._hires = ui_common.hires_checkbox()
+        brow.addWidget(self._hires)
+        layout_box.addLayout(brow)
 
         row = QHBoxLayout()
         row.addStretch()
@@ -136,30 +152,21 @@ class SheetPreviewDialog(QDialog):
         close.clicked.connect(self.reject)
         for w in (save, printb, close):
             row.addWidget(w)
-        layout.addLayout(row)
+        layout_box.addLayout(row)
 
         self._render()
 
     def _build(self, scale: int):
-        instax = self._border.currentData()
         crops = self._base_crops if scale == 1 else self._crops_fn(scale)
-        return composite.build_4r(crops, instax_border=instax, scale=scale)
+        return composite.build_sheet(self._layout, crops, scale)
 
     def _render(self) -> None:
-        instax = self._border.currentData()
-        self._bgr = composite.build_4r(self._base_crops, instax_border=instax)
-        self._hint.setText(
-            "Each photo inside a full instax card — white frame, thick bottom."
-            if instax else
-            "Each photo with only a thin white border — bigger image; cut along the lines."
-        )
+        self._bgr = composite.build_sheet(self._layout, self._base_crops)
+        self._hint.setText(_SHEET_HINTS[self._layout.kind].format(n=self._layout.n))
         rgb = cv2.cvtColor(self._bgr, cv2.COLOR_BGR2RGB)
         h, w = rgb.shape[:2]
         qimg = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
-        pix = QPixmap.fromImage(qimg).scaledToWidth(
-            840, Qt.TransformationMode.SmoothTransformation
-        )
-        self._img_lbl.setPixmap(pix)
+        self._img_lbl.setPixmap(_fit_pixmap(qimg, self, max_w=840))
 
     def _output(self):
         scale = ui_common.HIRES_SCALE if self._hires.isChecked() else 1
@@ -176,7 +183,11 @@ class SheetPreviewDialog(QDialog):
 
 
 class SheetPage(QWidget):
-    """The original tool: three instax-mini crops laid onto a 4R print sheet."""
+    """The main 4R tool: pick a layout, frame each photo, generate the 4R sheet.
+
+    Layouts range from the classic 3-up instax mini (with or without the white
+    frame) to plain 2×2 / 3×2 / 2×3 grids separated by white gutters you cut along.
+    """
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -184,21 +195,34 @@ class SheetPage(QWidget):
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(8)
 
-        intro = QLabel(
-            "Load three photos, then drag / mouse-wheel-zoom / rotate each so the "
-            "instax frame covers what you want. When all three are ready, generate "
-            "the 4R sheet."
-        )
-        intro.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
-        intro.setWordWrap(True)
-        root.addWidget(intro)
+        # Layout selector
+        top = QHBoxLayout()
+        top.setSpacing(8)
+        lay_lbl = QLabel("Layout")
+        lay_lbl.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
+        top.addWidget(lay_lbl)
+        self._layout_combo = QComboBox()
+        for lay in cfg.SHEET_LAYOUTS:
+            self._layout_combo.addItem(lay.label, lay)
+        self._layout_combo.currentIndexChanged.connect(self._on_layout_changed)
+        top.addWidget(self._layout_combo)
+        top.addStretch()
+        root.addLayout(top)
 
-        slots_row = QHBoxLayout()
-        slots_row.setSpacing(8)
-        self.slots = [CropSlot(i, self._update_state) for i in range(3)]
-        for slot in self.slots:
-            slots_row.addWidget(slot, stretch=1)
-        root.addLayout(slots_row, stretch=1)
+        self._intro = QLabel("")
+        self._intro.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
+        self._intro.setWordWrap(True)
+        root.addWidget(self._intro)
+
+        # Scrollable grid of crop stations (arranged to mirror the print layout)
+        self._slots_host = QWidget()
+        self._grid = QGridLayout(self._slots_host)
+        self._grid.setSpacing(8)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(self._slots_host)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        root.addWidget(scroll, stretch=1)
 
         bottom = QHBoxLayout()
         self._status = QLabel("")
@@ -215,14 +239,56 @@ class SheetPage(QWidget):
         bottom.addWidget(self._generate)
         root.addLayout(bottom)
 
+        self.slots: list[CropSlot] = []
+        self._applied_index = 0
+        self._rebuild_slots(cfg.SHEET_LAYOUTS[0])
+
+    @property
+    def _layout(self):
+        return self._layout_combo.currentData()
+
+    def _rebuild_slots(self, layout) -> None:
+        for s in self.slots:
+            self._grid.removeWidget(s)
+            s.setParent(None)
+            s.deleteLater()
+        self.slots = []
+        out_w, out_h, phys = layout.crop_size()
+        for i in range(layout.n):
+            r, c = divmod(i, layout.cols)
+            slot = CropSlot(i, self._update_state, out_w, out_h, phys)
+            self._grid.addWidget(slot, r, c)
+            self.slots.append(slot)
+        self._intro.setText(
+            f"{layout.label} — load {layout.n} photo"
+            f"{'s' if layout.n != 1 else ''}, frame each (drag / wheel-zoom / rotate), "
+            "then generate the 4R sheet."
+        )
+        self._applied_index = self._layout_combo.currentIndex()
         self._update_state()
 
+    def _on_layout_changed(self) -> None:
+        if any(s.is_ready() for s in self.slots):
+            resp = QMessageBox.question(
+                self, "Change layout",
+                "Changing the layout clears the loaded photos. Continue?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if resp != QMessageBox.StandardButton.Yes:
+                self._layout_combo.blockSignals(True)
+                self._layout_combo.setCurrentIndex(self._applied_index)
+                self._layout_combo.blockSignals(False)
+                return
+        self._rebuild_slots(self._layout)
+
     def _update_state(self) -> None:
+        n = len(self.slots)
         ready = sum(1 for s in self.slots if s.is_ready())
-        self._generate.setEnabled(ready == 3)
+        self._generate.setEnabled(n > 0 and ready == n)
         self._newsheet.setEnabled(ready > 0)
-        if ready < 3:
-            self._status.setText(f"{ready} / 3 images loaded — load all three to continue.")
+        if ready < n:
+            self._status.setText(f"{ready} / {n} images loaded — load all to continue.")
             self._status.setStyleSheet(f"color: {ui_common.MUTED}; font-size: 12px;")
         else:
             low = [i + 1 for i, s in enumerate(self.slots)
@@ -234,15 +300,15 @@ class SheetPage(QWidget):
                 )
                 self._status.setStyleSheet(f"color: {ui_common.WARN}; font-size: 12px; font-weight: 600;")
             else:
-                self._status.setText("All three ready and at good resolution ✓")
+                self._status.setText(f"All {n} ready and at good resolution ✓")
                 self._status.setStyleSheet(f"color: {ui_common.OK}; font-size: 12px; font-weight: 600;")
 
     def _on_new_sheet(self) -> None:
-        """Clear all three photos to start a fresh sheet (asks first)."""
+        """Clear all photos to start a fresh sheet (asks first)."""
         if any(s.is_ready() for s in self.slots):
             resp = QMessageBox.question(
                 self, "New sheet",
-                "Clear all three photos and start a new sheet?",
+                "Clear all photos and start a new sheet?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )
@@ -254,9 +320,13 @@ class SheetPage(QWidget):
 
     def _on_generate(self) -> None:
         if any(not s.is_ready() for s in self.slots):
-            QMessageBox.warning(self, "Not ready", "All three images must be loaded first.")
+            QMessageBox.warning(self, "Not ready", "All images must be loaded first.")
             return
-        SheetPreviewDialog(lambda scale=1: [s.get_output(scale) for s in self.slots], self).exec()
+        SheetPreviewDialog(
+            self._layout,
+            lambda scale=1: [s.get_output(scale) for s in self.slots],
+            self,
+        ).exec()
 
 
 class MainWindow(QMainWindow):
@@ -293,7 +363,7 @@ class MainWindow(QMainWindow):
         group = QActionGroup(self)
         group.setExclusive(True)
 
-        self._sheet_act = tools.addAction("4R Print Sheet (3 instax mini)")
+        self._sheet_act = tools.addAction("4R Print Sheet (instax & grids)")
         self._sheet_act.setCheckable(True)
         self._sheet_act.setChecked(True)
         self._sheet_act.triggered.connect(lambda: self._show_page(0))

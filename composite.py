@@ -93,6 +93,74 @@ def _build_4r_thin(crops: list[np.ndarray], border_mm: float, scale: int = 1) ->
     return canvas
 
 
+def _build_grid(crops: list[np.ndarray], cols: int, rows: int, scale: int = 1) -> np.ndarray:
+    """A plain cols×rows grid of photos on the 4R, separated by white gutters with
+    cut lines down their middle (and an outer trim border) — print, then cut."""
+    W, H = cfg.CANVAS_W * scale, cfg.CANVAS_H * scale
+    m = cfg.mm_to_px(cfg.GRID_MARGIN_MM) * scale
+    g = cfg.mm_to_px(cfg.GRID_GAP_MM) * scale
+    cw, ch = cfg.grid_cell_px(cols, rows, scale)
+
+    canvas = np.full((H, W, 3), 255, dtype=np.uint8)
+    for idx, crop in enumerate(crops):
+        r, c = divmod(idx, cols)
+        x = m + c * (cw + g)
+        y = m + r * (ch + g)
+        canvas[y:y + ch, x:x + cw] = cv2.resize(crop, (cw, ch), interpolation=cv2.INTER_AREA)
+
+    # cut lines down the middle of every gutter and margin (full span)
+    gray, t = cfg.TRIM_LINE_COLOR, 1
+    xs = [m // 2] + [m + c * (cw + g) + cw + g // 2 for c in range(cols - 1)] + [W - m // 2]
+    ys = [m // 2] + [m + r * (ch + g) + ch + g // 2 for r in range(rows - 1)] + [H - m // 2]
+    for x in xs:
+        cv2.line(canvas, (x, 0), (x, H), gray, t, cv2.LINE_AA)
+    for y in ys:
+        cv2.line(canvas, (0, y), (W, y), gray, t, cv2.LINE_AA)
+    return canvas
+
+
+def _build_instax_portrait(crops: list[np.ndarray], border_mm: float, scale: int = 1) -> np.ndarray:
+    """Four upright instax-mini photos as a 2×2 on a PORTRAIT 4R (10×15 cm). The 4R
+    paper is the same — just turned portrait — so four full-size minis fit where
+    only three fit on a landscape sheet. Each has a thin white border + cut line."""
+    b = cfg.mm_to_px(border_mm) * scale
+    # portrait canvas: swap the 4R's width and height
+    W, H = cfg.CANVAS_H * scale, cfg.CANVAS_W * scale        # 1200×1800 at scale 1
+    native_w, native_h = cfg.INSTAX_W * scale + 2 * b, cfg.INSTAX_H * scale + 2 * b
+    # size each card so a 2×2 block fits (capped at native — never upscale)
+    w = min(native_w, W // 2)
+    h = round(w * native_h / native_w)
+    if 2 * h > H:
+        h = H // 2
+        w = round(h * native_w / native_h)
+
+    canvas = np.full((H, W, 3), 255, dtype=np.uint8)
+    x0 = (W - 2 * w) // 2
+    y0 = (H - 2 * h) // 2
+    for idx, crop in enumerate(crops):
+        r, c = divmod(idx, 2)
+        x, y = x0 + c * w, y0 + r * h
+        card = cv2.resize(make_thin_card(crop, b, scale), (w, h), interpolation=cv2.INTER_AREA)
+        canvas[y:y + h, x:x + w] = card
+        cv2.rectangle(canvas, (x, y), (x + w - 1, y + h - 1),
+                      cfg.TRIM_LINE_COLOR, 1, cv2.LINE_AA)
+    return canvas
+
+
+def build_sheet(layout, crops: list[np.ndarray], scale: int = 1,
+                thin_border_mm: float = 2.0) -> np.ndarray:
+    """Build the 4R sheet for a given cfg.SheetLayout."""
+    if len(crops) != layout.n:
+        raise ValueError(f"{layout.key} expects {layout.n} crops, got {len(crops)}")
+    if layout.kind == "instax":
+        return _build_4r_instax(crops, scale)
+    if layout.kind == "instax_thin":
+        return _build_4r_thin(crops, thin_border_mm, scale)
+    if layout.kind == "instax_portrait":
+        return _build_instax_portrait(crops, thin_border_mm, scale)
+    return _build_grid(crops, layout.cols, layout.rows, scale)
+
+
 def build_4r(crops: list[np.ndarray], instax_border: bool = True,
              thin_border_mm: float = 2.0, scale: int = 1) -> np.ndarray:
     """Return a (CANVAS_W×scale)×(CANVAS_H×scale) BGR 4R sheet of three photos.
